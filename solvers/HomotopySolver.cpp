@@ -635,7 +635,7 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
 
 
 // solve J dX_N = - rk
-void HomotopySolver::NewtonSolve(BlockOperator & JkOp, [[maybe_unused]] const BlockVector & rk, BlockVector & dXN)
+void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, BlockVector & dXN)
 {
    int num_row_blocks = JkOp.NumRowBlocks();
    int num_col_blocks = JkOp.NumColBlocks();
@@ -665,6 +665,14 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, [[maybe_unused]] const Bl
       HypreParMatrix * Jk = HypreParMatrixFromBlocks(JkBlockMat);
       Solver * JkSolver = nullptr;
       /* direct solve of the 3x3 IP-Newton linear system */
+#ifdef MFEM_USE_STRUMPACK
+      JkSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
+      auto Jksolver = dynamic_cast<STRUMPACKSolver*>(JkSolver);
+      Jksolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
+      Jksolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
+      STRUMPACKRowLocMatrix *Jkstrumpack = new STRUMPACKRowLocMatrix(*Jk);
+      Jksolver->SetOperator(*Jkstrumpack);
+#else
 #ifdef MFEM_USE_MUMPS
       JkSolver = new MUMPSSolver(MPI_COMM_WORLD);
       auto Jksolver = dynamic_cast<MUMPSSolver *>(JkSolver);
@@ -675,14 +683,6 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, [[maybe_unused]] const Bl
 #ifdef MFEM_USE_MKL_CPARDISO
       JkSolver = new CPardisoSolver(MPI_COMM_WORLD);
       JkSolver->SetOperator(*Jk);
-#else
-#ifdef MFEM_USE_STRUMPACK
-      JkSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
-      auto Jksolver = dynamic_cast<STRUMPACKSolver*>(JkSolver);
-      Jksolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
-      Jksolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      STRUMPACKRowLocMatrix *Jkstrumpack = new STRUMPACKRowLocMatrix(*Jk);
-      Jksolver->SetOperator(*Jkstrumpack);
 #else
       MFEM_VERIFY(false, "linSolveOption = 0 will not work unless compiled mfem is with MUMPS or MKL_CPARDISO");
 #endif
@@ -831,7 +831,7 @@ bool HomotopySolver::NeighborhoodCheck(const BlockVector & X, const BlockVector 
 }
 
 
-bool HomotopySolver::NeighborhoodCheck_1([[maybe_unused]] const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_)
+bool HomotopySolver::NeighborhoodCheck_1(const BlockVector & /*X*/, const BlockVector & r, const double theta, const double beta, double & betabar_)
 {
    double r_inf_norm = GlobalLpNorm(infinity(), r.Normlinf(), MPI_COMM_WORLD);
    bool inNeighborhood = (r_inf_norm <= beta * theta);
