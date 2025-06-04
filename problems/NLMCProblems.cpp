@@ -57,8 +57,7 @@ OptNLMCProblem::OptNLMCProblem(ParOptProblem * optproblem_)
    Init(optproblem->GetDofOffsetsM(), optproblem->GetDofOffsetsU());
 
    {
-      Vector temp(dimx); 
-      temp = 0.0;
+      Vector temp(dimx); temp = 0.0;
       dFdx = GenerateHypreParMatrixFromDiagonal(dofOffsetsx, temp);
    }
    dFdy = nullptr;
@@ -93,20 +92,20 @@ void OptNLMCProblem::Q(const Vector & x, const Vector & y, Vector & qeval, int &
 
 
 // dF/dx = 0
-HypreParMatrix * OptNLMCProblem::DxF([[maybe_unused]] const Vector & x, [[maybe_unused]] const Vector & y)
+HypreParMatrix * OptNLMCProblem::DxF(const Vector & /*x*/, const Vector & /*y*/)
 {
    return dFdx;
 }
 
 // dF/dy = dg/dy
-HypreParMatrix * OptNLMCProblem::DyF([[maybe_unused]] const Vector & x, const Vector & y)
+HypreParMatrix * OptNLMCProblem::DyF(const Vector & /*x*/, const Vector & y)
 {
    return optproblem->Ddg(y);
 }
 
 
 // dQ/dx = -(dg/dy)^T
-HypreParMatrix * OptNLMCProblem::DxQ([[maybe_unused]] const Vector & x, const Vector & y)
+HypreParMatrix * OptNLMCProblem::DxQ(const Vector & /*x*/, const Vector & y)
 {
    // HypreParMatrix data is not owned by J
    HypreParMatrix * J = optproblem->Ddg(y);
@@ -122,7 +121,7 @@ HypreParMatrix * OptNLMCProblem::DxQ([[maybe_unused]] const Vector & x, const Ve
 
 
 // dQdy = Hessian(E) - second order derivaives in g
-HypreParMatrix * OptNLMCProblem::DyQ([[maybe_unused]] const Vector & x, const Vector & y)
+HypreParMatrix * OptNLMCProblem::DyQ(const Vector & /*x*/, const Vector & y)
 {
    return optproblem->DddE(y);
 }
