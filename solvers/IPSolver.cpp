@@ -302,7 +302,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
          cout << "\n** A-4. IP-Newton solve **\n";
       }
       zlhat = 0.0; Xhatuml = 0.0;
-      IPNewtonSolve(xk, lk, zlk, zlhat, Xhatuml, mu_k, false); 
+      IPNewtonSolve(xk, lk, zlk, zlhat, Xhatuml, mu_k); 
 
       // assign data stack, X = (u, m, l, zl)
       Xk = 0.0;
@@ -375,7 +375,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
    xf.GetBlock(1).Set(1.0, xk.GetBlock(1));
 }
 
-void ParInteriorPointSolver::FormIPNewtonMat(BlockVector & x, [[maybe_unused]] Vector & l, Vector &zl, BlockOperator &Ak)
+void ParInteriorPointSolver::FormIPNewtonMat(BlockVector & x, Vector & /*l*/, Vector &zl, BlockOperator &Ak)
 {
    // WARNING: Huu, Hum, Hmu, Hmm should all be Hessian terms of the Lagrangian, currently we 
    //          them by Hessian terms of the objective function and neglect the Hessian of l^T c
@@ -441,7 +441,7 @@ void ParInteriorPointSolver::FormIPNewtonMat(BlockVector & x, [[maybe_unused]] V
 
 // perturbed KKT system solve
 // determine the search direction
-void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl, Vector &zlhat, BlockVector &Xhat, double mu, [[maybe_unused]] bool socSolve)
+void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl, Vector &zlhat, BlockVector &Xhat, double mu)
 {
    int nKrylovIts = -1;
    // solve A x = b, where A is the IP-Newton matrix
@@ -463,14 +463,7 @@ void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl
       b.GetBlock(ii).Set(1.0, gradphi.GetBlock(ii));
       b.GetBlock(ii).Add(1.0, JTl.GetBlock(ii));
    }
-   //if(!socSolve) 
-   //{
    problem->c(x, b.GetBlock(2));
-   //}
-   //else
-   //{
-   //   b.GetBlock(2).Set(1.0, ckSoc);
-   //}
    b *= -1.0; 
    Xhat = 0.0;
 

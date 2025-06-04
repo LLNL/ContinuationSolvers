@@ -69,7 +69,7 @@ public:
     void Mult(const Vector&, Vector &); 
     void GetLagrangeMultiplier(Vector &);
     void FormIPNewtonMat(BlockVector& , Vector& , Vector& , BlockOperator &);
-    void IPNewtonSolve(BlockVector& , Vector& , Vector& , Vector&, BlockVector& , double, bool);
+    void IPNewtonSolve(BlockVector& , Vector& , Vector& , Vector&, BlockVector& , double);
     void lineSearch(BlockVector& , BlockVector& , double);
     void projectZ(const Vector & , Vector &, double);
     void filterCheck(double, double);
