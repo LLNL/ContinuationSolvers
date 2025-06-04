@@ -20,6 +20,7 @@ protected:
    HYPRE_BigInt * dofOffsetsx, * dofOffsetsy; // owned by problem
    
    double tol = 1.e-4;
+   bool earlyTermination = true;
 
 
    // BlockVector X;
@@ -97,6 +98,7 @@ public:
    bool NeighborhoodCheck_2(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_);
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
+   void SetEarlyTermination(bool earlyTermination_) { earlyTermination = earlyTermination_; };
    virtual ~HomotopySolver();
 };
 

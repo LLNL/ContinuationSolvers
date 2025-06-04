@@ -363,22 +363,36 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
          double gk_norm = GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
 	 if (gk_norm < theta * epsgrad)
 	 {
-	    if (iAmRoot)
+	    if (earlyTermination)
 	    {
-	       cout << "Exiting -- converged to a local stationary point of ||rk||_2^2\n";
+	       if (iAmRoot)
+	       {
+	          cout << "Exiting -- converged to a local stationary point of ||rk||_2^2\n";
+	       }
+	       break;
 	    }
-	    break;
+	    else if (iAmRoot)
+	    {
+	       cout << "Warning -- apparent convergence to a local stationary point of ||rk||_2^2\n";
+	    }
 	 }
 	 else 
 	 {	 
 	    double Xk_norm = GlobalLpNorm(infinity(), Xk.Normlinf(), MPI_COMM_WORLD);
 	    if (Xk_norm > deltabnd)
             {
-	       if (iAmRoot)
+	       if (earlyTermination)
 	       {
-	          cout << "Exiting -- iterates are unbounded\n";
+	          if (iAmRoot)
+	          {
+	             cout << "Exiting -- iterates are unbounded\n";
+	          }
+	          break;
 	       }
-	       break;
+	       else if (iAmRoot)
+	       {
+	          cout << "Warning -- iterates appear to be unbounded\n";
+	       }
 	    }
 	    else
 	    {
@@ -386,11 +400,18 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       double GX0_norm = GlobalLpNorm(2, GX0.Norml2(), MPI_COMM_WORLD);
 	       if (GX0_norm > feps * tol && theta < tol)
 	       {
-	          if (iAmRoot)
+	          if (earlyTermination)
 		  {
-		     cout << "Exiting -- convergence to a non-interior point\n";
-		  } 
-		  break;
+		     if (iAmRoot)
+		     {
+		        cout << "Exiting -- convergence to a non-interior point\n";
+		     } 
+		     break;
+		  }
+		  else if(iAmRoot)
+		  {
+		     cout << "Warning -- convergence to a non-interior point detected\n";
+		  }
 	       }
 	    }
 	 }
@@ -462,7 +483,7 @@ double HomotopySolver::E(const BlockVector &X, int & Eeval_err)
    double xsc_infnorm = GlobalLpNorm(infinity(), xsc.Normlinf(), MPI_COMM_WORLD);
    double ssc_infnorm = GlobalLpNorm(infinity(), ssc.Normlinf(), MPI_COMM_WORLD);
    double Msc = max(xsc_infnorm, ssc_infnorm);
-   double fz = f0;
+   double fz = 1.0;
    if( dimxglb > 0 ) {
      fz = max(xsc_1norm, ssc_1norm) / ( static_cast<double>(dimxglb) ); 
    }
@@ -684,7 +705,7 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
       JkSolver = new CPardisoSolver(MPI_COMM_WORLD);
       JkSolver->SetOperator(*Jk);
 #else
-      MFEM_VERIFY(false, "linSolveOption = 0 will not work unless compiled mfem is with MUMPS or MKL_CPARDISO");
+      MFEM_VERIFY(false, "linSolveOption = 0 will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
 #endif
 #endif
 #endif
@@ -859,41 +880,6 @@ bool HomotopySolver::NeighborhoodCheck_2(const BlockVector & X, const BlockVecto
    betabar_ = max(r_inf_norms(0) / (theta * xs_inf_norm), max(r_inf_norms(1), r_inf_norms(2)) / theta);
    return inNeighborhood;
 }
-
-
-
-
-
-//void HomotopySolver::GradientCheck(const BlockVector & X0, const double theta)
-//{
-//   BlockVector Xhat(block_offsets_xsy); Xhat = 0.0; Xhat.Randomize();
-//   BlockVector Xt(block_offsets_xsy);   Xt = 0.0;
-//   BlockVector GX0(block_offsets_xsy);  GX0 = 0.0;
-//   BlockOperator JGX0(block_offsets_xsy, block_offsets_xsy);   
-//   G(X0, theta, GX0);
-//   JacG(X0, theta, JGX0);
-//
-//
-//   BlockVector GXt(block_offsets_xsy); GXt = 0.0;
-//   BlockVector R(block_offsets_xsy); R = 0.0; // residual
-//   BlockVector Temp(block_offsets_xsy); Temp = 0.0;
-//
-//   double eps = 1.0;
-//   for (int i = 0; i < 30; i++)
-//   {
-//      cout << "---------------\n";
-//      Xt.Set(1.0, X0);
-//      Xt.Add(eps, Xhat);
-//      G(Xt, theta, GXt);
-//      // ||J * xhat - (G(x0 + eps * xhat) - G(x0)) / eps
-//      JGX0.Mult(Xhat, R);
-//      Temp.Set(1.0 / eps, GXt);
-//      Temp.Add(-1.0 / eps, GX0);
-//      R.Add(-1.0, Temp);
-//      cout << "||J * Xhat - (G(x0 - eps * xhat) - G(x0)) / eps||_2 = " << R.Norml2() << ", eps = " << eps << endl;
-//      eps *= 0.5;
-//   }
-//}
 
 
 
