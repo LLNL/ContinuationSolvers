@@ -99,18 +99,18 @@ double ParOptProblem::CalcObjective(const BlockVector &x, int & eval_err)
 
 void ParOptProblem::Duf(const BlockVector &x, Vector &y) { DdE(x.GetBlock(0), y); }
 
-void ParOptProblem::Dmf([[maybe_unused]] const BlockVector &x, Vector &y) { y = 0.0; }
+void ParOptProblem::Dmf(const BlockVector & /*x*/, Vector &y) { y = 0.0; }
 
 HypreParMatrix * ParOptProblem::Duuf(const BlockVector &x) 
 { 
    return DddE(x.GetBlock(0)); 
 }
 
-HypreParMatrix * ParOptProblem::Dumf([[maybe_unused]] const BlockVector &x) { return nullptr; }
+HypreParMatrix * ParOptProblem::Dumf(const BlockVector &/*x*/) { return nullptr; }
 
-HypreParMatrix * ParOptProblem::Dmuf([[maybe_unused]] const BlockVector &x) { return nullptr; }
+HypreParMatrix * ParOptProblem::Dmuf(const BlockVector &/*x*/) { return nullptr; }
 
-HypreParMatrix * ParOptProblem::Dmmf([[maybe_unused]] const BlockVector &x) { return nullptr; }
+HypreParMatrix * ParOptProblem::Dmmf(const BlockVector &/*x*/) { return nullptr; }
 
 void ParOptProblem::c(const BlockVector &x, Vector &y, int & eval_err) // c(u,m) = g(u) - m 
 {
@@ -124,7 +124,7 @@ HypreParMatrix * ParOptProblem::Duc(const BlockVector &x)
    return Ddg(x.GetBlock(0)); 
 }
 
-HypreParMatrix * ParOptProblem::Dmc([[maybe_unused]] const BlockVector &x) 
+HypreParMatrix * ParOptProblem::Dmc(const BlockVector &/*x*/) 
 { 
    return Ih;
 } 
@@ -147,7 +147,6 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HYPRE_Int * constraintM
   J = nullptr;
   P = nullptr;
   
-  // int nprocs = Mpi::WorldSize();
   int myrank = Mpi::WorldRank();
 
   HYPRE_BigInt * dofOffsets = problem->GetDofOffsetsU();
@@ -168,18 +167,8 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HYPRE_Int * constraintM
   constraintOffsets_reduced = offsetsFromLocalSizes(nLocConstraints);
 
 
-  for (int i = 0; i < 2; i++)
-  {
-    cout << "constraintOffsetsReduced_" << i << " = " << constraintOffsets_reduced[i] << ", (rank = " << myrank << ")\n";
-  }
-
   HYPRE_BigInt * constraintOffsets;
   constraintOffsets = offsetsFromLocalSizes(nProblemConstraints);
-  for (int i = 0; i < 2; i++)
-  {
-    cout << "constraintOffsets_" << i << " = " << constraintOffsets[i] << ", (rank = " << myrank << ")\n";
-  }
-  
   
   P = GenerateProjector(constraintOffsets, constraintOffsets_reduced, constraintMask);
 
@@ -194,7 +183,6 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HypreParVector & constr
   J = nullptr;
   P = nullptr;
   
-  // int nprocs = Mpi::WorldSize();
   int myrank = Mpi::WorldRank();
 
   HYPRE_BigInt * dofOffsets = problem->GetDofOffsetsU();
@@ -215,18 +203,9 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HypreParVector & constr
   constraintOffsets_reduced = offsetsFromLocalSizes(nLocConstraints);
 
 
-  for (int i = 0; i < 2; i++)
-  {
-    cout << "constraintOffsetsReduced_" << i << " = " << constraintOffsets_reduced[i] << ", (rank = " << myrank << ")\n";
-  }
 
   HYPRE_BigInt * constraintOffsets;
   constraintOffsets = offsetsFromLocalSizes(nProblemConstraints);
-  for (int i = 0; i < 2; i++)
-  {
-    cout << "constraintOffsets_" << i << " = " << constraintOffsets[i] << ", (rank = " << myrank << ")\n";
-  }
-  
   
   P = GenerateProjector(constraintOffsets, constraintOffsets_reduced, constraintMask);
 
