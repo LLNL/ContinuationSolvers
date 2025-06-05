@@ -131,7 +131,6 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       Xtrial.Set(1.0, Xk);
       Xtrial.Add(1.0, dXtrk);
 
-
       Residual(Xtrial, theta, rktrial, reval_err);
       Vector rktrial_comp_norm(3); rktrial_comp_norm = 0.0;
       for (int i = 0; i < 3; i++)
@@ -156,7 +155,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 }
       }
       
-      if (!inFilterRegion && inNeighborhood)
+      if (!inFilterRegion && inNeighborhood && reval_err == 0)
       {
 	 UpdateFilter(rktrial_comp_norm);
 	 tr_centering = false;
@@ -226,7 +225,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    {
 	       *hout << "TRcen -- not in beta1 neighborhood\n";
 	    }
-	    if (!inFilterRegion && inNeighborhood)
+	    if (!inFilterRegion && inNeighborhood && reval_err == 0)
 	    {
 	       UpdateFilter(rktrial_comp_norm);
 	       delta *= 0.5;
@@ -318,6 +317,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       {
 	           *hout << "CenManagement -- bad evaluation of residual\n";
 	       }   
+	       t = 0.995 * pow(t, 3.0);
+	       i_linesearch += 1;
 	       continue;
 	    }
 	    inNeighborhood = NeighborhoodCheck(Xtrialp, rktrial, theta_t, beta1, betabar);
