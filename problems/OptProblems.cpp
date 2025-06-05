@@ -147,8 +147,6 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HYPRE_Int * constraintM
   J = nullptr;
   P = nullptr;
   
-  int myrank = Mpi::WorldRank();
-
   HYPRE_BigInt * dofOffsets = problem->GetDofOffsetsU();
 
   // given a constraint mask, lets update the constraintOffsets
@@ -183,8 +181,6 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HypreParVector & constr
   J = nullptr;
   P = nullptr;
   
-  int myrank = Mpi::WorldRank();
-
   HYPRE_BigInt * dofOffsets = problem->GetDofOffsetsU();
 
   // given a constraint mask, lets update the constraintOffsets
