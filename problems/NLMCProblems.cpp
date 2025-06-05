@@ -12,6 +12,7 @@ GeneralNLMCProblem::GeneralNLMCProblem()
 { 
   dofOffsetsx = nullptr;
   dofOffsetsy = nullptr;
+  label = -1;
 }
 
 void GeneralNLMCProblem::Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOffsetsy_)

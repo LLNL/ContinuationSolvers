@@ -8,7 +8,7 @@ using namespace mfem;
 
 
 
-ParGeneralOptProblem::ParGeneralOptProblem() : block_offsetsx(3) { label = 0; }
+ParGeneralOptProblem::ParGeneralOptProblem() : block_offsetsx(3) { label = -1; }
 
 void ParGeneralOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM_)
 {

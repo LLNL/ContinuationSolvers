@@ -97,15 +97,15 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
       if (iAmRoot)
       {
-         cout << "-----------------\n";
-         cout << "jOpt = " << jOpt << endl;
-         cout << "optimality error = " << opt_err << endl;
+         *hout << "-----------------\n";
+         *hout << "jOpt = " << jOpt << endl;
+         *hout << "optimality error = " << opt_err << endl;
       }
       if (opt_err < tol)
       {
          if (iAmRoot)
 	 {
-            cout << "NMCP solver converged!\n";
+            *hout << "NMCP solver converged!\n";
 	 }
 	 converged = true;
 	 break;
@@ -118,8 +118,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       
       if (iAmRoot)
       {
-	 cout << "delta = " << delta << endl;
-	 cout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
+	 *hout << "delta = " << delta << endl;
+	 *hout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
       }
       
       NewtonSolve(JGX, rk, dXNk); // Newton direction, associated to equation rk = 0
@@ -144,15 +144,15 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       {
          if (inFilterRegion)
          {
-            cout << "cenGN -- trial point in filter region\n";
+            *hout << "cenGN -- trial point in filter region\n";
          }
          if (inNeighborhood)
          {
-            cout << "cenGN -- trial point in beta1 neighborhood\n";
+            *hout << "cenGN -- trial point in beta1 neighborhood\n";
          }
 	 if (!inFilterRegion && inNeighborhood)
 	 {
-	    cout << "cenGN -- skipping TR-centering\n";
+	    *hout << "cenGN -- skipping TR-centering\n";
 	 }
       }
       
@@ -180,7 +180,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 {
 	    if (iAmRoot)
 	    {
-	       cout << "TRcen -- bad evaluation of residual\n";
+	       *hout << "TRcen -- bad evaluation of residual\n";
 	    }   
 	    delta *= 0.5;
 	    continue;
@@ -203,10 +203,10 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 rhok = actual_decrease / pred_decrease;
 	 if (iAmRoot)
 	 {
-	    cout << "-*-*-*-*-*-*-*-*-*\n";
-	    cout << "TRcen -- delta = " << delta << endl;
-	    cout << "TRcen -- predicted decrease = " << pred_decrease << endl;
-	    cout << "TRcen -- actual decrease = " << actual_decrease << endl;
+	    *hout << "-*-*-*-*-*-*-*-*-*\n";
+	    *hout << "TRcen -- delta = " << delta << endl;
+	    *hout << "TRcen -- predicted decrease = " << pred_decrease << endl;
+	    *hout << "TRcen -- actual decrease = " << actual_decrease << endl;
 	 }
 	 MFEM_VERIFY(pred_decrease > 0., "Loss of accuracy in dog-leg");
 
@@ -220,11 +220,11 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    inNeighborhood = NeighborhoodCheck(Xtrial, rktrial, theta, beta1, betabar);
 	    if (inFilterRegion && iAmRoot)
 	    {
-	       cout << "TRcen -- in filter region\n";
+	       *hout << "TRcen -- in filter region\n";
 	    }
 	    if (!inNeighborhood && iAmRoot)
 	    {
-	       cout << "TRcen -- not in beta1 neighborhood\n";
+	       *hout << "TRcen -- not in beta1 neighborhood\n";
 	    }
 	    if (!inFilterRegion && inNeighborhood)
 	    {
@@ -233,7 +233,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       Xk.Set(1.0, Xtrial);
 	       if (iAmRoot)
 	       {
-	          cout << "TRcen -- accepted trial point, decreasing TR-radius\n";
+	          *hout << "TRcen -- accepted trial point, decreasing TR-radius\n";
 	       }
 	       break;
 	    }
@@ -242,7 +242,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       delta *= 0.5;
 	       if (iAmRoot)
 	       {
-	          cout << "TRcen -- rejected trial point, decreasing TR-radius\n";
+	          *hout << "TRcen -- rejected trial point, decreasing TR-radius\n";
 	       }
 	       continue;
 	    }
@@ -252,7 +252,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    Xk.Set(1.0, Xtrial);
 	    if (iAmRoot)
 	    {
-	       cout << "TRcen -- accepted trial point\n";
+	       *hout << "TRcen -- accepted trial point\n";
 	    }	       
 	    break;
 	 }
@@ -260,7 +260,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 {
 	    if (iAmRoot)
 	    {
-	       cout << "TRcen -- accepted trial point, potentially increasing TR-radius\n";
+	       *hout << "TRcen -- accepted trial point, potentially increasing TR-radius\n";
 	    }
 	    delta = min(2.0 * delta, delta_MAX);
 	    Xk.Set(1.0, Xtrial);
@@ -280,7 +280,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       {
          if (iAmRoot)
 	 {
-	    cout << "CenManagement -- reducing homotopy parameter\n";
+	    *hout << "CenManagement -- reducing homotopy parameter\n";
 	 }
 	 double thetaplus = min(alg_nu * theta, pow(theta, alg_rho)); 
 	 double t = 1.0;
@@ -304,7 +304,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    {
 	       if (iAmRoot)
 	       {      
-	          cout << "CenManagement -- predictor step length too small\n";
+	          *hout << "CenManagement -- predictor step length too small\n";
 	       }
 	       theta = 0.9 * theta;
 	       break;
@@ -316,7 +316,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    {
 	       if (iAmRoot)
 	       {
-	           cout << "CenManagement -- bad evaluation of residual\n";
+	           *hout << "CenManagement -- bad evaluation of residual\n";
 	       }   
 	       continue;
 	    }
@@ -331,8 +331,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       ClearFilter();
 	       if (iAmRoot)
 	       {
-	          cout << "CenManagement -- accepted linesearch trial point\n";
-	          cout << "CenManagement -- theta = " << theta << endl;
+	          *hout << "CenManagement -- accepted linesearch trial point\n";
+	          *hout << "CenManagement -- theta = " << theta << endl;
 	       }
 	    }
 	    else
@@ -340,10 +340,10 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       t = 0.995 * pow(t, 3.0);
 	       if (iAmRoot)
 	       {
-	          cout << "CenManagement -- not in neighborhood\n";
-	          cout << "CenManagement -- reducing t\n";
-	          cout << "CenManagement -- t = " << t << endl;
-	          cout << "CenManagement -- thetaplus = " << thetaplus << endl;
+	          *hout << "CenManagement -- not in neighborhood\n";
+	          *hout << "CenManagement -- reducing t\n";
+	          *hout << "CenManagement -- t = " << t << endl;
+	          *hout << "CenManagement -- thetaplus = " << thetaplus << endl;
 	       }
 	    }
 	    i_linesearch += 1;
@@ -353,8 +353,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       {
          if (iAmRoot)
 	 {
-	    cout << "CenManagement -- skipping\n";
-	    cout << "CenManagement -- applying heuristics for quick termination resolution\n";
+	    *hout << "CenManagement -- skipping\n";
+	    *hout << "CenManagement -- applying heuristics for quick termination resolution\n";
 	 }
 	 beta0 = fbeta * betabar;
 	 beta1 = fbeta * beta0;
@@ -367,13 +367,13 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    {
 	       if (iAmRoot)
 	       {
-	          cout << "Exiting -- converged to a local stationary point of ||rk||_2^2\n";
+	          *hout << "Exiting -- converged to a local stationary point of ||rk||_2^2\n";
 	       }
 	       break;
 	    }
 	    else if (iAmRoot)
 	    {
-	       cout << "Warning -- apparent convergence to a local stationary point of ||rk||_2^2\n";
+	       *hout << "Warning -- apparent convergence to a local stationary point of ||rk||_2^2\n";
 	    }
 	 }
 	 else 
@@ -385,13 +385,13 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       {
 	          if (iAmRoot)
 	          {
-	             cout << "Exiting -- iterates are unbounded\n";
+	             *hout << "Exiting -- iterates are unbounded\n";
 	          }
 	          break;
 	       }
 	       else if (iAmRoot)
 	       {
-	          cout << "Warning -- iterates appear to be unbounded\n";
+	          *hout << "Warning -- iterates appear to be unbounded\n";
 	       }
 	    }
 	    else
@@ -404,13 +404,13 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 		  {
 		     if (iAmRoot)
 		     {
-		        cout << "Exiting -- convergence to a non-interior point\n";
+		        *hout << "Exiting -- convergence to a non-interior point\n";
 		     } 
 		     break;
 		  }
 		  else if(iAmRoot)
 		  {
-		     cout << "Warning -- convergence to a non-interior point detected\n";
+		     *hout << "Warning -- convergence to a non-interior point detected\n";
 		  }
 	       }
 	    }
@@ -727,7 +727,7 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
       dXtr.Set(1.0, dXN);
       if (iAmRoot)
       {
-         cout << "dog-leg using Newton direction\n";
+         *hout << "dog-leg using Newton direction\n";
       }
    }
    else
@@ -746,7 +746,7 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
          dXtr.Set(-delta / gk_norm, gk);
 	 if (iAmRoot)
 	 {
-	    cout << "dog-leg using steepest descent direction\n";
+	    *hout << "dog-leg using steepest descent direction\n";
 	 }
       }
       else
@@ -771,7 +771,7 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
 	 dXtr.Add((1.0 - t_star), dXsd);
 	 if (iAmRoot)
 	 {
-	    cout << "dog-leg using combination of Newton and SD directions\n";
+	    *hout << "dog-leg using combination of Newton and SD directions\n";
 	 }
       }
    }

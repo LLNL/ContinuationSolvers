@@ -61,6 +61,7 @@ protected:
     std::ofstream muStream;
     std::ofstream optHistory_mu;
     std::ofstream optHistory_0;
+    std::ostream * ipout = &std::cout;
 public:
     ParInteriorPointSolver(ParGeneralOptProblem*);
     double MaxStepSize(Vector& , Vector& , Vector& , double);
@@ -100,6 +101,10 @@ public:
     void GetLogBarrierZl(Vector &);
     void GetLogBarrierMu(double &);
     void SetLogBarrierMu(double);
+    void SetOutputStream(std::ostream * ipout_)
+    {
+       ipout = ipout_;
+    }
     virtual ~ParInteriorPointSolver();
 };
 

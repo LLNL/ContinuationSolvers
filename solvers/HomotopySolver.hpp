@@ -78,6 +78,8 @@ protected:
 
    int MyRank;
    bool iAmRoot;
+
+   std::ostream * hout = &std::cout;
 public:
    HomotopySolver(GeneralNLMCProblem * problem_);
    void Mult(const Vector & x0, const Vector & y0, Vector & xf, Vector & yf);
@@ -99,6 +101,10 @@ public:
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
    void SetEarlyTermination(bool earlyTermination_) { earlyTermination = earlyTermination_; };
+   void SetOutputStream(std::ostream * hout_)
+   {
+      hout = hout_;
+   }
    virtual ~HomotopySolver();
 };
 

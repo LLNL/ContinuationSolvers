@@ -235,7 +235,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
    {
       if(iAmRoot)
       {
-         cout << "interior-point solve step " << jOpt << endl;
+         *ipout << "interior-point solve step " << jOpt << endl;
       }
       // A-2. Check convergence of overall optimization problem
       printOptimalityError = false;
@@ -245,8 +245,8 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
          converged = true;
 	 if(iAmRoot)
          {
-            cout << "solved optimization problem :)\n";
-	    cout << "to abs tol " << OptTol << endl;
+            *ipout << "solved optimization problem :)\n";
+	    *ipout << "to abs tol " << OptTol << endl;
 	    IPNewtonKrylovIters.close();
 	    muStream.close();
 	    optHistory_mu.close();
@@ -264,13 +264,13 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
          Eeval = E(xk, lk, zlk, mu_k, printOptimalityError);
          if(iAmRoot)
          {
-            cout << "E = " << Eeval << endl;
+            *ipout << "E = " << Eeval << endl;
          }
          if(Eeval < kEps * mu_k)
          {
             if(iAmRoot)
             {
-               cout << "solved barrier subproblem :), for mu = " << mu_k << endl;
+               *ipout << "solved barrier subproblem :), for mu = " << mu_k << endl;
             }
             // A-3.1. Recompute the barrier parameteri
             double mu_k_new = max(OptTol / 10., min(kMu * mu_k, pow(mu_k, thetaMu)));
@@ -299,7 +299,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
       // solve for (uhat, mhat, lhat)
       if(iAmRoot)
       {
-         cout << "\n** A-4. IP-Newton solve **\n";
+         *ipout << "\n** A-4. IP-Newton solve **\n";
       }
       zlhat = 0.0; Xhatuml = 0.0;
       IPNewtonSolve(xk, lk, zlk, zlhat, Xhatuml, mu_k); 
@@ -322,8 +322,8 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
       // A-5. Backtracking line search.
       if(iAmRoot)
       {
-         cout << "\n** A-5. Linesearch **\n";
-         cout << "mu = " << mu_k << endl;
+         *ipout << "\n** A-5. Linesearch **\n";
+         *ipout << "mu = " << mu_k << endl;
       }
       lineSearch(Xk, Xhat, mu_k);
 
@@ -331,7 +331,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
       {
          if(iAmRoot)
          {
-            cout << "lineSearch successful :)\n";
+            *ipout << "lineSearch successful :)\n";
          }
          if(!switchCondition || !sufficientDecrease)
          {
@@ -349,9 +349,9 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
       {
          if(iAmRoot)
          {
-            cout << "lineSearch not successful :(\n";
-            cout << "attempting feasibility restoration with theta = " << thx0 << endl;
-            cout << "no feasibility restoration implemented, exiting now \n";
+            *ipout << "lineSearch not successful :(\n";
+            *ipout << "attempting feasibility restoration with theta = " << thx0 << endl;
+            *ipout << "no feasibility restoration implemented, exiting now \n";
 	    IPNewtonKrylovIters.close();
 	    muStream.close();
 	    optHistory_mu.close();
@@ -361,7 +361,7 @@ void ParInteriorPointSolver::Mult(const BlockVector &x0, BlockVector &xf)
       }
       if(jOpt + 1 == max_iter && iAmRoot) 
       {  
-         cout << "maximum optimization iterations :(\n";
+         *ipout << "maximum optimization iterations :(\n";
 	 IPNewtonKrylovIters.close();
 	 muStream.close();
 	 optHistory_mu.close();
@@ -644,7 +644,7 @@ void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl
    MPI_Allreduce(&locLargeStep, &glbLargeStep, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
    if (iAmRoot && glbLargeStep < 1)
    {
-      cout << "SMALL STEP" << endl;
+      *ipout << "SMALL STEP" << endl;
    } 
    double xnorm_inf = GlobalLpNorm(infinity(), x.Normlinf(), MPI_COMM_WORLD); 
    double xhat_norm_inf = max(GlobalLpNorm(infinity(), Xhat.GetBlock(0).Normlinf(), MPI_COMM_WORLD),
@@ -652,8 +652,8 @@ void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl
 
    if (iAmRoot)
    {
-      cout << "||x||_inf = " << xnorm_inf << endl;
-      cout << "||xhat||_inf = " << xhat_norm_inf << endl;
+      *ipout << "||x||_inf = " << xnorm_inf << endl;
+      *ipout << "||xhat||_inf = " << xhat_norm_inf << endl;
    }
 }
 
@@ -722,20 +722,20 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
 //         if (iAmRoot)
 //         {
 //            double diff = abs(eps_step*((Eplus-E0)/eps_step-gradE_dhat));
-//            cout << std::scientific;
-//            cout << std::setprecision(14);
+//            *ipout << std::scientific;
+//            *ipout << std::setprecision(14);
 //            if( iii < 10 ) {
-//              cout << "iii  " << iii << " eps " << eps_step << " eps*gradE_dhat " << eps_step*gradE_dhat << " Eplus " << Eplus << " E0 " << E0 << " absdiff " << diff <<  endl;
+//              *ipout << "iii  " << iii << " eps " << eps_step << " eps*gradE_dhat " << eps_step*gradE_dhat << " Eplus " << Eplus << " E0 " << E0 << " absdiff " << diff <<  endl;
 //            } else {
-//              cout << "iii "  << iii << " eps " << eps_step << " eps*gradE_dhat " << eps_step*gradE_dhat << " Eplus " << Eplus << " E0 " << E0 << " absdiff " << diff <<  endl;
+//              *ipout << "iii "  << iii << " eps " << eps_step << " eps*gradE_dhat " << eps_step*gradE_dhat << " Eplus " << Eplus << " E0 " << E0 << " absdiff " << diff <<  endl;
 //            }
-//          //cout << "|grad(E)^T dhat - (E(d0 + eps * dhat) - E(d0))/eps| = " << fd_err << endl;
-//          //cout << "grad(E)^T dhat = " << gradE_dhat << endl;
-//          //cout << "(E(d0 + eps * dhat) - E(d0)) / eps = " << (Eplus - E0) / eps_step << endl;
-//          //cout << "E(d0) = " << E0 << endl;
-//          //cout << "E(d0 + eps * dhat) = " << Eplus << endl;
-//          //cout << "E(d0 + eps * dhat) - E(d0) = " << Eplus - E0 << endl;
-//          //cout << "eps = " << eps_step << "\n\n";
+//          //*ipout << "|grad(E)^T dhat - (E(d0 + eps * dhat) - E(d0))/eps| = " << fd_err << endl;
+//          //*ipout << "grad(E)^T dhat = " << gradE_dhat << endl;
+//          //*ipout << "(E(d0 + eps * dhat) - E(d0)) / eps = " << (Eplus - E0) / eps_step << endl;
+//          //*ipout << "E(d0) = " << E0 << endl;
+//          //*ipout << "E(d0 + eps * dhat) = " << Eplus << endl;
+//          //*ipout << "E(d0 + eps * dhat) - E(d0) = " << Eplus - E0 << endl;
+//          //*ipout << "eps = " << eps_step << "\n\n";
 //         }
 //         eps_step /= 2.0;
 //      }
@@ -749,15 +749,15 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
    descentDirection = Dxphi0_xhat < 0. ? true : false;
    if (iAmRoot)
    {
-      cout << "grad(phi)^T xhat / (||grad(phi)|| * ||xhat||) = " << Dxphi0_xhat / (xhat_norm * Dxphi0_norm) << endl;
-      cout << "|grad(phi)^T xhat| = " << abs(Dxphi0_xhat) << endl;
+      *ipout << "grad(phi)^T xhat / (||grad(phi)|| * ||xhat||) = " << Dxphi0_xhat / (xhat_norm * Dxphi0_norm) << endl;
+      *ipout << "|grad(phi)^T xhat| = " << abs(Dxphi0_xhat) << endl;
       if(descentDirection)
       {
-         cout << "is a descent direction for the log-barrier objective\n";
+         *ipout << "is a descent direction for the log-barrier objective\n";
       }
       else
       {
-         cout << "is not a descent direction for the log-barrier objective\n";
+         *ipout << "is not a descent direction for the log-barrier objective\n";
       }
    }
    thx0 = theta(x0);
@@ -768,7 +768,7 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
    {
       if (iAmRoot)
       {
-         cout << "\n--------- alpha = " << alpha << " ---------\n";
+         *ipout << "\n--------- alpha = " << alpha << " ---------\n";
       }
       // ----- A-5.2. Compute trial point: xtrial = x0 + alpha_i xhat
       xtrial.Set(1.0, x0);
@@ -779,14 +779,14 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
       phxtrial = phi(xtrial, mu, ph_eval_err);
       if (iAmRoot)
       {
-         cout << "| grad(phi)^xhat - (phi(x0 + alpha xhat) - phi(x0)) / alpha | = " << abs(Dxphi0_xhat - (phxtrial - phx0) / alpha) << ", alpha = " << alpha << endl;
+         *ipout << "| grad(phi)^xhat - (phi(x0 + alpha xhat) - phi(x0)) / alpha | = " << abs(Dxphi0_xhat - (phxtrial - phx0) / alpha) << ", alpha = " << alpha << endl;
       }
 
       if (!(th_eval_err == 0 && ph_eval_err == 0))
       {
         if(iAmRoot)
 	{
-	  cout << "BAD STEP: reducing step length\n";
+	  *ipout << "BAD STEP: reducing step length\n";
 	}
 	alpha *= 0.5;
 	continue;
@@ -796,7 +796,7 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
       {
          if (iAmRoot)
          {
-            cout << "not in filter region :)\n";
+            *ipout << "not in filter region :)\n";
          }
          // ------ A.5.4: Check sufficient decrease
          if(!descentDirection)
@@ -809,9 +809,9 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
          }
          if (iAmRoot)
          {
-            cout << setprecision(30) << "theta(x0) = "     << thx0     << ", thetaMin = "                  << thetaMin             << endl;
-            cout << "theta(xtrial) = " << thxtrial << ", (1-gTheta) *theta(x0) = "     << (1. - gTheta) * thx0 << endl;
-            cout << "phi(xtrial) = "   << phxtrial << ", phi(x0) = " << phx0 << ", phi(x0) - gPhi *theta(x0) = " << phx0 - gPhi * thx0   << endl;
+            *ipout << setprecision(30) << "theta(x0) = "     << thx0     << ", thetaMin = "                  << thetaMin             << endl;
+            *ipout << "theta(xtrial) = " << thxtrial << ", (1-gTheta) *theta(x0) = "     << (1. - gTheta) * thx0 << endl;
+            *ipout << "phi(xtrial) = "   << phxtrial << ", phi(x0) = " << phx0 << ", phi(x0) - gPhi *theta(x0) = " << phx0 - gPhi * thx0   << endl;
          }      
          // Case I      
          if(thx0 <= thetaMin && switchCondition)
@@ -819,21 +819,21 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
             sufficientDecrease = (phxtrial <= phx0 + eta * alpha * Dxphi0_xhat) ? true : false;
             if(sufficientDecrease)
             {
-               if(iAmRoot) { cout << "Line search successful: sufficient decrease in log-barrier objective.\n"; } 
+               if(iAmRoot) { *ipout << "Line search successful: sufficient decrease in log-barrier objective.\n"; } 
                // accept the trial step
                lineSearchSuccess = true;
                break;
             }
             else
             {
-               if(iAmRoot) { cout << "sufficient decrease not achieved in log-barrier objective.\n";}
+               if(iAmRoot) { *ipout << "sufficient decrease not achieved in log-barrier objective.\n";}
             }
          }
          else
          {
             if(thxtrial <= (1. - gTheta) * thx0 || phxtrial <= phx0 - gPhi * thx0)
             {
-               if(iAmRoot) { cout << "Line search successful: infeasibility or log-barrier objective decreased.\n"; } 
+               if(iAmRoot) { *ipout << "Line search successful: infeasibility or log-barrier objective decreased.\n"; } 
                // accept the trial step
                lineSearchSuccess = true;
                break;
@@ -844,7 +844,7 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
          //{
          //   if (iAmRoot)
          //   {
-         //      cout << "second order correction\n";
+         //      *ipout << "second order correction\n";
          //   }
          //   problem->c(xtrial, ckSoc);
          //   problem->c(x0, ck0);
@@ -859,7 +859,7 @@ void ParInteriorPointSolver::lineSearch(BlockVector& X0, BlockVector& Xhat, doub
       {
          if (iAmRoot)
          {
-            cout << "in filter region :(\n"; 
+            *ipout << "in filter region :(\n"; 
          }
       }
       alpha *= 0.5;
@@ -927,10 +927,10 @@ double ParInteriorPointSolver::E(const BlockVector &x, const Vector &l, const Ve
    sd = max(sMax, (ll1 + zl1) / (double(dimCGlb + dimMGlb))) / sMax;
    if(iAmRoot && printEeval)
    {
-      cout << "evaluating optimality error for mu = " << mu << endl;
-      cout << "stationarity measure = "    << E1 / sd << endl;
-      cout << "feasibility measure  = "    << E2      << endl;
-      cout << "complimentarity measure = " << E3 / sc << endl;
+      *ipout << "evaluating optimality error for mu = " << mu << endl;
+      *ipout << "stationarity measure = "    << E1 / sd << endl;
+      *ipout << "feasibility measure  = "    << E2      << endl;
+      *ipout << "complimentarity measure = " << E3 / sc << endl;
    }
    if (iAmRoot)
    {

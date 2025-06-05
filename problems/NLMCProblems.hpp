@@ -22,6 +22,7 @@ protected:
    HYPRE_BigInt dimxglb, dimyglb;
    HYPRE_BigInt * dofOffsetsx;
    HYPRE_BigInt * dofOffsetsy;
+   int label;
 public:
    GeneralNLMCProblem();
    virtual void Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOffsetsy_);
@@ -37,6 +38,8 @@ public:
    HYPRE_BigInt GetDimyGlb() const { return dimyglb; };
    HYPRE_BigInt * GetDofOffsetsx() const { return dofOffsetsx; };
    HYPRE_BigInt * GetDofOffsetsy() const { return dofOffsetsy; }; 
+   void setProblemLabel(int label_) { label = label_; };
+   int getProblemLabel() { return label; };
    ~GeneralNLMCProblem();
 };
 
