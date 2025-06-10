@@ -37,9 +37,9 @@ protected:
     Array<int> block_offsetsumlz, block_offsetsuml, block_offsetsx;
     Vector ml;
 
-    Vector ckSoc;
     HypreParMatrix * Huu, * Hum, * Hmu, * Hmm, * Wmm, *D, * Ju, * Jm, * JuT, * JmT;
-    
+   
+    Solver * linSolver; 
     int jOpt;
     bool converged;
     
@@ -55,12 +55,7 @@ protected:
     bool initializedl;
     bool initializedzl;
     Vector minit, linit, zlinit;
-    int linSolver;
     double linSolveTol;
-    std::ofstream IPNewtonKrylovIters;
-    std::ofstream muStream;
-    std::ofstream optHistory_mu;
-    std::ofstream optHistory_0;
     std::ostream * ipout = &std::cout;
 public:
     ParInteriorPointSolver(ParGeneralOptProblem*);
@@ -90,7 +85,6 @@ public:
     void SetBarrierParameter(double);
     void GetNumIterations(int &);    
     void SaveLogBarrierHessianIterates(bool);
-    void SetLinearSolver(int);
     void SetLinearSolveTol(double);
     void InitializeM(Vector &);
     void InitializeL(Vector &);
@@ -104,7 +98,8 @@ public:
     void SetOutputStream(std::ostream * ipout_)
     {
        ipout = ipout_;
-    }
+    };
+    void SetLinearSolver(Solver &solver_) { linSolver = &(solver_); };
     virtual ~ParInteriorPointSolver();
 };
 

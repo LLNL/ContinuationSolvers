@@ -34,6 +34,7 @@ protected:
    HypreParMatrix * dFdx, * dFdy, * dQdx, * dQdy;
 
    HypreParMatrix * JGxx, * JGxs, * JGsx, * JGss, * JGsy, * JGyx,  * JGyy; 
+   Solver * linSolver; 
    // Homotopy variable/parameters (eq 12.)
    double theta0 = 0.9;
    const double p = 1.5;
@@ -71,11 +72,6 @@ protected:
    int max_outer_iter = 100;
    int jOpt;
 
-   // linear algebra
-   // flag which controls which linear solver is used
-   // to solve the unsymmetric Newton system
-   int linSolveOption = 0;
-
    int MyRank;
    bool iAmRoot;
 
@@ -104,7 +100,8 @@ public:
    void SetOutputStream(std::ostream * hout_)
    {
       hout = hout_;
-   }
+   };
+    void SetLinearSolver(Solver &solver_) { linSolver = &(solver_); };
    virtual ~HomotopySolver();
 };
 

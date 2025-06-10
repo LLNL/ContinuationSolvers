@@ -13,7 +13,7 @@ using namespace mfem;
 
 HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),
 	dFdx(nullptr), dFdy(nullptr), dQdx(nullptr), dQdy(nullptr), JGxx(nullptr), JGxs(nullptr), JGsx(nullptr),
-   JGss(nullptr), JGsy(nullptr), JGyx(nullptr), JGyy(nullptr), filter(0)
+   JGss(nullptr), JGsy(nullptr), JGyx(nullptr), JGyy(nullptr), linSolver(nullptr), filter(0)
 {
    dimx = problem->GetDimx();
    dimy = problem->GetDimy();
@@ -659,14 +659,16 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
 // solve J dX_N = - rk
 void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, BlockVector & dXN)
 {
-   int num_row_blocks = JkOp.NumRowBlocks();
-   int num_col_blocks = JkOp.NumColBlocks();
-   
-   
-   // Direct solver (default)
-   MFEM_VERIFY(linSolveOption == 0, "NewtonSolve only supports a direct solver (linSolveOption == 0)");
-   if(linSolveOption == 0)
+   if (linSolver)
    {
+      linSolver->SetOperator(JkOp);
+      linSolver->Mult(rk, dXN);
+      dXN *= -1.0;
+   }
+   else
+   {
+      int num_row_blocks = JkOp.NumRowBlocks();
+      int num_col_blocks = JkOp.NumColBlocks();
       Array2D<const HypreParMatrix *> JkBlockMat(num_row_blocks, num_col_blocks);
       for(int i = 0; i < num_row_blocks; i++)
       {
@@ -685,31 +687,31 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
       }
       
       HypreParMatrix * Jk = HypreParMatrixFromBlocks(JkBlockMat);
-      Solver * JkSolver = nullptr;
       /* direct solve of the 3x3 IP-Newton linear system */
 #ifdef MFEM_USE_STRUMPACK
-      JkSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
-      auto Jksolver = dynamic_cast<STRUMPACKSolver*>(JkSolver);
-      Jksolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
-      Jksolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
+      linSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
+      auto linsolver = dynamic_cast<STRUMPACKSolver*>(linSolver);
+      linsolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
+      linsolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
       STRUMPACKRowLocMatrix *Jkstrumpack = new STRUMPACKRowLocMatrix(*Jk);
-      Jksolver->SetOperator(*Jkstrumpack);
+      linsolver->SetOperator(*Jkstrumpack);
 #elif defined(MFEM_USE_MUMPS)
-      JkSolver = new MUMPSSolver(MPI_COMM_WORLD);
-      auto Jksolver = dynamic_cast<MUMPSSolver *>(JkSolver);
-      Jksolver->SetPrintLevel(0);
-      Jksolver->SetMatrixSymType(MUMPSSolver::MatType::UNSYMMETRIC);
-      Jksolver->SetOperator(*Jk);
+      linSolver = new MUMPSSolver(MPI_COMM_WORLD);
+      auto linsolver = dynamic_cast<MUMPSSolver *>(linSolver);
+      linsolver->SetPrintLevel(0);
+      linsolver->SetMatrixSymType(MUMPSSolver::MatType::UNSYMMETRIC);
+      linsolver->SetOperator(*Jk);
 #elif defined(MFEM_USE_MKL_CPARDISO)
-      JkSolver = new CPardisoSolver(MPI_COMM_WORLD);
-      JkSolver->SetOperator(*Jk);
+      linSolver = new CPardisoSolver(MPI_COMM_WORLD);
+      linSolver->SetOperator(*Jk);
 #else
-      MFEM_ERROR("linSolveOption = 0 will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
+      MFEM_ERROR("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
 #endif
-      JkSolver->Mult(rk, dXN);
+      linSolver->Mult(rk, dXN);
       dXN *= -1.0;
       delete Jk;
-      delete JkSolver;
+      delete linSolver;
+      linSolver = nullptr;
 #ifdef MFEM_USE_STRUMPACK
       delete Jkstrumpack;
 #endif
