@@ -3,6 +3,10 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#ifdef MFEM_USE_STRUMPACK
+#include <StrumpackOptions.hpp>
+#include <mfem/linalg/strumpack.hpp>
+#endif
 
 using namespace std;
 using namespace mfem;
@@ -390,28 +394,6 @@ void ParInteriorPointSolver::FormIPNewtonMat(BlockVector & x, Vector & /*l*/, Ve
    {
       DiagLogBar(ii) = zl(ii) / (x(ii+dimU) - ml(ii));
    }
-   if(iAmRoot)
-   {
-      std::ofstream diagStream;
-      char diagString[100];
-      snprintf(diagString, 100, "data/D%d.dat", jOpt);
-      diagStream.open(diagString, ios::out | ios::trunc);
-      for(int ii = 0; ii < dimM; ii++)
-      {
-         diagStream << setprecision(30) << DiagLogBar(ii) << endl;
-      }
-      diagStream.close();
-      
-      std::ofstream sStream;
-      char sString[100];
-      snprintf(sString, 100, "data/s%d.dat", jOpt);
-      sStream.open(sString, ios::out | ios::trunc);
-      for(int ii = 0; ii < dimM; ii++)
-      {
-         sStream << setprecision(30) << x(dimU+ii) << endl;
-      }
-      sStream.close();
-   } 
 
    D = GenerateHypreParMatrixFromDiagonal(problem->GetDofOffsetsM(), DiagLogBar);
   
@@ -474,52 +456,47 @@ void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl
       Array2D<const HypreParMatrix *> ABlockMatrix(3,3);
       for(int ii = 0; ii < 3; ii++)
       {
-      for(int jj = 0; jj < 3; jj++)
-      {
-         if(!A.IsZeroBlock(ii, jj))
+         for(int jj = 0; jj < 3; jj++)
          {
-            ABlockMatrix(ii, jj) = dynamic_cast<HypreParMatrix *>(
-			           const_cast<Operator *>(&(A.GetBlock(ii, jj))));
+            if(!A.IsZeroBlock(ii, jj))
+            {
+               ABlockMatrix(ii, jj) = dynamic_cast<HypreParMatrix *>(
+           		           const_cast<Operator *>(&(A.GetBlock(ii, jj))));
+            }
+            else
+            {
+               ABlockMatrix(ii, jj) = nullptr;
+            }
          }
-         else
-         {
-            ABlockMatrix(ii, jj) = nullptr;
-         }
-      }
       }
       
       HypreParMatrix * Ah = HypreParMatrixFromBlocks(ABlockMatrix);   
-      // HypreParMatrix * Huu_print = dynamic_cast<HypreParMatrix *>(
-      //   	                const_cast<Operator*>(&(A.GetBlock(0, 0))));
-      // HypreParMatrix * Ju_print  = dynamic_cast<HypreParMatrix *>(
-      //   	                const_cast<Operator*>(&(A.GetBlock(2, 0))));
-      //std::ostringstream Huu_file_name;
-      //Huu_file_name << "data/Huu" << problem->getProblemLabel();
-      //Huu_print->Print(Huu_file_name.str());
-
-      //std::ostringstream Ju_file_name;
-      //Ju_file_name << "data/Ju" << problem->getProblemLabel();
-      //Ju_print->Print(Ju_file_name.str());
-
-
       /* direct solve of the 3x3 IP-Newton linear system */
-      #ifdef MFEM_USE_MUMPS
-        MUMPSSolver ASolver;
-        ASolver.SetPrintLevel(0);
-        ASolver.SetMatrixSymType(MUMPSSolver::MatType::SYMMETRIC_INDEFINITE);
-        ASolver.SetOperator(*Ah);
-        ASolver.Mult(b, Xhat);
-      #else 
-        #ifdef MFEM_USE_MKL_CPARDISO
-          CPardisoSolver ASolver(MPI_COMM_WORLD);
-          ASolver.SetOperator(*Ah);
-          ASolver.Mult(b, Xhat);
-	#else
-	  MFEM_VERIFY(false, "linSolver 0 will not work unless compiled with MUMPS or MKL");
-        #endif
-      #endif
-
+      Solver * AkSolver = nullptr;
+#ifdef MFEM_USE_STRUMPACK
+      AkSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
+      auto Aksolver = dynamic_cast<STRUMPACKSolver *>(AkSolver);
+      Aksolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
+      STRUMPACKRowLocMatrix *Akstrumpack = new STRUMPACKRowLocMatrix(*Ah);
+      Aksolver->SetOperator(*Akstrumpack);
+#elif defined(MFEM_USE_MUMPS)
+      AkSolver = new MUMPSSolver(MPI_COMM_WORLD);
+      auto Aksolver = dynamic_cast<MUMPSSolver *>(AkSolver);
+      Aksolver->SetPrintLevel(0);
+      Aksolver->SetMatrixSymType(MUMPSSolver::MatType::UNSYMMETRIC);
+      Aksolver->SetOperator(*Ah);
+#elif defined(MFEM_USE_MKL_CPARDISO)
+      AkSolver = new CPardisoSolver(MPI_COMM_WORLD);
+      AkSolver->SetOperator(*Ah);
+#else
+      MFEM_ERROR("linSolveOption = 0 will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
+#endif
+      AkSolver->Mult(b, Xhat);
       delete Ah;
+      delete AkSolver;
+#ifdef MFEM_USE_STRUMPACK
+      delete Akstrumpack;
+#endif
    }
    else if(linSolver == 1 || linSolver == 2)
    {

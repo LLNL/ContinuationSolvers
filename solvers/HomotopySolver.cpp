@@ -694,21 +694,17 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
       Jksolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
       STRUMPACKRowLocMatrix *Jkstrumpack = new STRUMPACKRowLocMatrix(*Jk);
       Jksolver->SetOperator(*Jkstrumpack);
-#else
-#ifdef MFEM_USE_MUMPS
+#elif defined(MFEM_USE_MUMPS)
       JkSolver = new MUMPSSolver(MPI_COMM_WORLD);
       auto Jksolver = dynamic_cast<MUMPSSolver *>(JkSolver);
       Jksolver->SetPrintLevel(0);
       Jksolver->SetMatrixSymType(MUMPSSolver::MatType::UNSYMMETRIC);
       Jksolver->SetOperator(*Jk);
-#else 
-#ifdef MFEM_USE_MKL_CPARDISO
+#elif defined(MFEM_USE_MKL_CPARDISO)
       JkSolver = new CPardisoSolver(MPI_COMM_WORLD);
       JkSolver->SetOperator(*Jk);
 #else
-      MFEM_VERIFY(false, "linSolveOption = 0 will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
-#endif
-#endif
+      MFEM_ERROR("linSolveOption = 0 will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
 #endif
       JkSolver->Mult(rk, dXN);
       dXN *= -1.0;
