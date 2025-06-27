@@ -470,7 +470,7 @@ void ParInteriorPointSolver::IPNewtonSolve(BlockVector &x, Vector &l, Vector &zl
       linSolver = new CPardisoSolver(MPI_COMM_WORLD);
       linSolver->SetOperator(*Ah);
 #else
-      MFEM_ERROR("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
+      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
 #endif
       linSolver->Mult(b, Xhat);
       delete Ah;

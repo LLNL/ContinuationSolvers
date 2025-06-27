@@ -705,7 +705,7 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
       linSolver = new CPardisoSolver(MPI_COMM_WORLD);
       linSolver->SetOperator(*Jk);
 #else
-      MFEM_ERROR("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
+      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
 #endif
       linSolver->Mult(rk, dXN);
       dXN *= -1.0;
