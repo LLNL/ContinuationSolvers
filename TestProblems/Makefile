@@ -1,6 +1,6 @@
 # Use the MFEM build directory
 MFEM_DIR ?= /g/g20/tuckerh/software/MKLmfem/mfem
-MFEM_BUILD_DIR ?= /g/g20/tuckerh/software/MKLmfem/mfem/build_MKL_metis5
+MFEM_BUILD_DIR ?= $(MFEM_DIR)/build_MKL_metis5
 
 SRC=..
 

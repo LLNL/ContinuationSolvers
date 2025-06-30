@@ -1,23 +1,22 @@
 #include "mfem.hpp"
 
-using namespace mfem;
 #ifndef UTILITY_FUNCTIONS
 #define UTILITY_FUNCTIONS
 
 void HypreToMfemOffsets(HYPRE_BigInt * offsets);
 
-HypreParMatrix * GenerateHypreParMatrixFromSparseMatrix(HYPRE_BigInt * colOffsetsloc, HYPRE_BigInt * rowOffsetsloc, SparseMatrix * Asparse);
+mfem::HypreParMatrix * GenerateHypreParMatrixFromSparseMatrix(HYPRE_BigInt * colOffsetsloc, HYPRE_BigInt * rowOffsetsloc, mfem::SparseMatrix * Asparse);
 
-HypreParMatrix * GenerateHypreParMatrixFromDiagonal(HYPRE_BigInt * offsetsloc, 
-		Vector & diag);
-
-
-HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, HYPRE_Int * mask);
-
-HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, const HypreParVector & mask);
+mfem::HypreParMatrix * GenerateHypreParMatrixFromDiagonal(HYPRE_BigInt * offsetsloc, 
+		mfem::Vector & diag);
 
 
-HYPRE_BigInt * offsetsFromLocalSizes(int n);
+mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, HYPRE_Int * mask);
+
+mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, const mfem::HypreParVector & mask);
+
+
+HYPRE_BigInt * offsetsFromLocalSizes(int n, MPI_Comm comm = MPI_COMM_WORLD);
 
 
 #endif

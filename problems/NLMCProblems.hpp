@@ -1,10 +1,5 @@
 #include "mfem.hpp"
 #include "OptProblems.hpp"
-#include <fstream>
-#include <iostream>
-
-using namespace std;
-using namespace mfem;
 
 #ifndef PROBLEM_DEFS
 #define PROBLEM_DEFS
@@ -26,12 +21,12 @@ protected:
 public:
    GeneralNLMCProblem();
    virtual void Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOffsetsy_);
-   virtual void F(const Vector &x, const Vector &y, Vector &feval, int &eval_err) const = 0;
-   virtual void Q(const Vector &x, const Vector &y, Vector &qeval, int &eval_err) const = 0;
-   virtual HypreParMatrix * DxF(const Vector &x, const Vector &y) = 0;
-   virtual HypreParMatrix * DyF(const Vector &x, const Vector &y) = 0;
-   virtual HypreParMatrix * DxQ(const Vector &x, const Vector &y) = 0;
-   virtual HypreParMatrix * DyQ(const Vector &x, const Vector &y) = 0;
+   virtual void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const = 0;
+   virtual void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const = 0;
+   virtual mfem::HypreParMatrix * DxF(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::HypreParMatrix * DyF(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::HypreParMatrix * DxQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::HypreParMatrix * DyQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
    int GetDimx() const { return dimx; };
    int GetDimy() const { return dimy; }; 
    HYPRE_BigInt GetDimxGlb() const { return dimxglb; };
@@ -48,18 +43,18 @@ class OptNLMCProblem : public GeneralNLMCProblem
 {
 protected:
    ParOptProblem * optproblem;
-   HypreParMatrix * dFdx;
-   HypreParMatrix * dFdy;
-   HypreParMatrix * dQdx;
-   HypreParMatrix * dQdy;
+   mfem::HypreParMatrix * dFdx;
+   mfem::HypreParMatrix * dFdy;
+   mfem::HypreParMatrix * dQdx;
+   mfem::HypreParMatrix * dQdy;
 public:
    OptNLMCProblem(ParOptProblem * problem_);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &eval_err) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &eval_err) const;
-   HypreParMatrix * DxF(const Vector &x, const Vector &y);
-   HypreParMatrix * DyF(const Vector &x, const Vector &y);
-   HypreParMatrix * DxQ(const Vector &x, const Vector &y);
-   HypreParMatrix * DyQ(const Vector &x, const Vector &y);
+   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
+   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const;
+   mfem::HypreParMatrix * DxF(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::HypreParMatrix * DyF(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::HypreParMatrix * DxQ(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::HypreParMatrix * DyQ(const mfem::Vector &x, const mfem::Vector &y);
    ParOptProblem * GetOptProblem() { return optproblem;  };
    ~OptNLMCProblem();    
 };

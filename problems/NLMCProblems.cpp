@@ -1,10 +1,5 @@
 #include "mfem.hpp"
 #include "NLMCProblems.hpp"
-#include <fstream>
-#include <iostream>
-
-using namespace std;
-using namespace mfem;
 
 
 
@@ -58,7 +53,7 @@ OptNLMCProblem::OptNLMCProblem(ParOptProblem * optproblem_)
    Init(optproblem->GetDofOffsetsM(), optproblem->GetDofOffsetsU());
 
    {
-      Vector temp(dimx); temp = 0.0;
+      mfem::Vector temp(dimx); temp = 0.0;
       dFdx = GenerateHypreParMatrixFromDiagonal(dofOffsetsx, temp);
    }
    dFdy = nullptr;
@@ -67,7 +62,7 @@ OptNLMCProblem::OptNLMCProblem(ParOptProblem * optproblem_)
 }
 
 // F(x, y) = g(y)
-void OptNLMCProblem::F(const Vector & x, const Vector & y, Vector & feval, int & eval_err) const
+void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & feval, int & eval_err) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx, "OptNLMCProblem::F -- Inconsistent dimensions");
   optproblem->g(y, feval, eval_err);
@@ -77,14 +72,14 @@ void OptNLMCProblem::F(const Vector & x, const Vector & y, Vector & feval, int &
 
 
 // Q(x, y) = \nabla_y L(y, x) = \nabla_y E(y) - (dg(y)/ dy)^T x
-void OptNLMCProblem::Q(const Vector & x, const Vector & y, Vector & qeval, int &eval_err) const
+void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & qeval, int &eval_err) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy, "OptNLMCProblem::Q -- Inconsistent dimensions");
   
   optproblem->DdE(y, qeval);
   
-  HypreParMatrix * J = optproblem->Ddg(y);
-  Vector temp(dimy); temp = 0.0;
+  mfem::HypreParMatrix * J = optproblem->Ddg(y);
+  mfem::Vector temp(dimy); temp = 0.0;
   J->MultTranspose(x, temp);
   
   eval_err = 0;
@@ -93,36 +88,36 @@ void OptNLMCProblem::Q(const Vector & x, const Vector & y, Vector & qeval, int &
 
 
 // dF/dx = 0
-HypreParMatrix * OptNLMCProblem::DxF(const Vector & /*x*/, const Vector & /*y*/)
+mfem::HypreParMatrix * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vector & /*y*/)
 {
    return dFdx;
 }
 
 // dF/dy = dg/dy
-HypreParMatrix * OptNLMCProblem::DyF(const Vector & /*x*/, const Vector & y)
+mfem::HypreParMatrix * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
    return optproblem->Ddg(y);
 }
 
 
 // dQ/dx = -(dg/dy)^T
-HypreParMatrix * OptNLMCProblem::DxQ(const Vector & /*x*/, const Vector & y)
+mfem::HypreParMatrix * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
-   // HypreParMatrix data is not owned by J
-   HypreParMatrix * J = optproblem->Ddg(y);
-   if (dQdx != nullptr)
+   mfem::HypreParMatrix * J = optproblem->Ddg(y);
+   if (dQdx)
    {
       delete dQdx;
+      dQdx = nullptr;
    }
    dQdx = J->Transpose();
-   Vector temp(dimy); temp = -1.0;
+   mfem::Vector temp(dimy); temp = -1.0;
    dQdx->ScaleRows(temp);
    return dQdx;
 }
 
 
 // dQdy = Hessian(E) - second order derivaives in g
-HypreParMatrix * OptNLMCProblem::DyQ(const Vector & /*x*/, const Vector & y)
+mfem::HypreParMatrix * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
    return optproblem->DddE(y);
 }
@@ -132,7 +127,7 @@ HypreParMatrix * OptNLMCProblem::DyQ(const Vector & /*x*/, const Vector & y)
 OptNLMCProblem::~OptNLMCProblem()
 {
    delete dFdx;
-   if (dQdx != nullptr)
+   if (dQdx)
    {
       delete dQdx;
    }
