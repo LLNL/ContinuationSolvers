@@ -1,14 +1,10 @@
 #include "mfem.hpp"
 #include "HomotopySolver.hpp"
-#include <fstream>
-#include <iostream>
 #ifdef MFEM_USE_STRUMPACK
 #include <StrumpackOptions.hpp>
 #include <mfem/linalg/strumpack.hpp>
 #endif
 
-using namespace std;
-using namespace mfem;
 
 
 HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),
@@ -37,24 +33,24 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
 
    converged = false; 
     
-   MyRank = Mpi::WorldRank();
+   MyRank = mfem::Mpi::WorldRank();
    iAmRoot = MyRank == 0 ? true : false;
 }
 
 
-void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vector & yf)
+void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf)
 {
-   BlockVector  Xk(block_offsets_xsy);  Xk = 0.0;
-   BlockVector  Xtrial(block_offsets_xsy); Xtrial = 0.0;
-   BlockVector dXNk(block_offsets_xsy); dXNk = 0.0;
-   BlockVector dXtrk(block_offsets_xsy); dXtrk = 0.0;
-   BlockVector GX(block_offsets_xsy); GX = 0.0;
-   BlockVector GX0(block_offsets_xsy); GX0 = 0.0;
-   BlockVector rk(block_offsets_xsy); rk = 0.0;
-   BlockVector rktrial(block_offsets_xsy); rktrial = 0.0;
-   BlockVector rklinear(block_offsets_xsy); rklinear = 0.0;
-   BlockVector gk(block_offsets_xsy); gk = 0.0; // grad(mk) = grad_z(||rk + Jk * z||)|_{z=0} = 2 Jk^T rk
-   BlockOperator JGX(block_offsets_xsy, block_offsets_xsy);
+   mfem::BlockVector  Xk(block_offsets_xsy);  Xk = 0.0;
+   mfem::BlockVector  Xtrial(block_offsets_xsy); Xtrial = 0.0;
+   mfem::BlockVector dXNk(block_offsets_xsy); dXNk = 0.0;
+   mfem::BlockVector dXtrk(block_offsets_xsy); dXtrk = 0.0;
+   mfem::BlockVector GX(block_offsets_xsy); GX = 0.0;
+   mfem::BlockVector GX0(block_offsets_xsy); GX0 = 0.0;
+   mfem::BlockVector rk(block_offsets_xsy); rk = 0.0;
+   mfem::BlockVector rktrial(block_offsets_xsy); rktrial = 0.0;
+   mfem::BlockVector rklinear(block_offsets_xsy); rklinear = 0.0;
+   mfem::BlockVector gk(block_offsets_xsy); gk = 0.0; // grad(mk) = grad_z(||rk + Jk * z||)|_{z=0} = 2 Jk^T rk
+   mfem::BlockOperator JGX(block_offsets_xsy, block_offsets_xsy);
    Xk.GetBlock(0).Set(1.0, x0);
    Xk.GetBlock(1).Set(0.0, x0); // s0 = 0
    Xk.GetBlock(2).Set(1.0, y0);
@@ -76,16 +72,16 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
    int Eeval_err;
    
    // in Cosmin's matlab code this is fx and fy
-   Vector F0(dimx); F0 = 0.0;
-   Vector Q0(dimy); Q0 = 0.0;
+   mfem::Vector F0(dimx); F0 = 0.0;
+   mfem::Vector Q0(dimy); Q0 = 0.0;
    problem->F(Xk.GetBlock(0), Xk.GetBlock(2), F0, Feval_err);
    problem->Q(Xk.GetBlock(0), Xk.GetBlock(2), Q0, Qeval_err);
    MFEM_VERIFY(Feval_err == 0 && Qeval_err == 0, "unsuccessful evaluation of F and/or Q at initial point of Homotopy solver");
 
-   double cx_scale = GlobalLpNorm(2, F0.Norml2(), MPI_COMM_WORLD);
-   double cy_scale = GlobalLpNorm(2, Q0.Norml2(), MPI_COMM_WORLD);
-   cx_scale = max(1.0, sqrt(cx_scale));
-   cy_scale = max(1.0, sqrt(cy_scale));
+   double cx_scale = mfem::GlobalLpNorm(2, F0.Norml2(), MPI_COMM_WORLD);
+   double cy_scale = mfem::GlobalLpNorm(2, Q0.Norml2(), MPI_COMM_WORLD);
+   cx_scale = std::max(1.0, sqrt(cx_scale));
+   cy_scale = std::max(1.0, sqrt(cy_scale));
    cx = cx_scale;
    cy = cy_scale;
    
@@ -98,8 +94,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       if (iAmRoot)
       {
          *hout << "-----------------\n";
-         *hout << "jOpt = " << jOpt << endl;
-         *hout << "optimality error = " << opt_err << endl;
+         *hout << "jOpt = " << jOpt << std::endl;
+         *hout << "optimality error = " << opt_err << std::endl;
       }
       if (opt_err < tol)
       {
@@ -118,7 +114,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       
       if (iAmRoot)
       {
-	 *hout << "delta = " << delta << endl;
+	 *hout << "delta = " << delta << std::endl;
 	 *hout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
       }
       
@@ -132,10 +128,10 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
       Xtrial.Add(1.0, dXtrk);
 
       Residual(Xtrial, theta, rktrial, reval_err);
-      Vector rktrial_comp_norm(3); rktrial_comp_norm = 0.0;
+      mfem::Vector rktrial_comp_norm(3); rktrial_comp_norm = 0.0;
       for (int i = 0; i < 3; i++)
       {
-         rktrial_comp_norm(i) = GlobalLpNorm(2, rktrial.GetBlock(i).Norml2(), MPI_COMM_WORLD);
+         rktrial_comp_norm(i) = mfem::GlobalLpNorm(2, rktrial.GetBlock(i).Norml2(), MPI_COMM_WORLD);
       }
       inFilterRegion = FilterCheck(rktrial_comp_norm);
       inNeighborhood = NeighborhoodCheck(Xtrial, rktrial, theta, beta1, betabar);
@@ -194,18 +190,18 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	  * linearized form
 	  * (|| rk + Jk * dx||_2)^2 
 	  */	 
-	 double rk_sqrnorm       = InnerProduct(MPI_COMM_WORLD, rk, rk);
-         double rktrial_sqrnorm  = InnerProduct(MPI_COMM_WORLD, rktrial, rktrial);
-         double rklinear_sqrnorm = InnerProduct(MPI_COMM_WORLD, rklinear, rklinear);
+	 double rk_sqrnorm       = mfem::InnerProduct(MPI_COMM_WORLD, rk, rk);
+         double rktrial_sqrnorm  = mfem::InnerProduct(MPI_COMM_WORLD, rktrial, rktrial);
+         double rklinear_sqrnorm = mfem::InnerProduct(MPI_COMM_WORLD, rklinear, rklinear);
          double pred_decrease   = rk_sqrnorm - rklinear_sqrnorm; // || rk ||_2^2 - || rk + Jk * dx||_2^2
 	 double actual_decrease = rk_sqrnorm - rktrial_sqrnorm;  // || r(Xk) ||_2^2 - || r(Xk + dX) ||_2^2
 	 rhok = actual_decrease / pred_decrease;
 	 if (iAmRoot)
 	 {
 	    *hout << "-*-*-*-*-*-*-*-*-*\n";
-	    *hout << "TRcen -- delta = " << delta << endl;
-	    *hout << "TRcen -- predicted decrease = " << pred_decrease << endl;
-	    *hout << "TRcen -- actual decrease = " << actual_decrease << endl;
+	    *hout << "TRcen -- delta = " << delta << std::endl;
+	    *hout << "TRcen -- predicted decrease = " << pred_decrease << std::endl;
+	    *hout << "TRcen -- actual decrease = " << actual_decrease << std::endl;
 	 }
 	 MFEM_VERIFY(pred_decrease > 0., "Loss of accuracy in dog-leg");
 
@@ -213,7 +209,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 {
 	    for (int i = 0; i < 3; i++)
 	    {
-	       rktrial_comp_norm(i) = GlobalLpNorm(2, rktrial.GetBlock(i).Norml2(), MPI_COMM_WORLD);
+	       rktrial_comp_norm(i) = mfem::GlobalLpNorm(2, rktrial.GetBlock(i).Norml2(), MPI_COMM_WORLD);
 	    }
             inFilterRegion = FilterCheck(rktrial_comp_norm);
 	    inNeighborhood = NeighborhoodCheck(Xtrial, rktrial, theta, beta1, betabar);
@@ -261,7 +257,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    {
 	       *hout << "TRcen -- accepted trial point, potentially increasing TR-radius\n";
 	    }
-	    delta = min(2.0 * delta, delta_MAX);
+	    delta = std::min(2.0 * delta, delta_MAX);
 	    Xk.Set(1.0, Xtrial);
 	    break;
 	 }
@@ -281,13 +277,13 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 {
 	    *hout << "CenManagement -- reducing homotopy parameter\n";
 	 }
-	 double thetaplus = min(alg_nu * theta, pow(theta, alg_rho)); 
+	 double thetaplus = std::min(alg_nu * theta, pow(theta, alg_rho)); 
 	 double t = 1.0;
 	 double theta_t;
 	 // compute predictor direction
-         BlockVector rkp(block_offsets_xsy); rkp = 0.0;
-	 BlockVector dXp(block_offsets_xsy); dXp = 0.0;
-	 BlockVector Xtrialp(block_offsets_xsy); Xtrialp = 0.0;
+         mfem::BlockVector rkp(block_offsets_xsy); rkp = 0.0;
+	 mfem::BlockVector dXp(block_offsets_xsy); dXp = 0.0;
+	 mfem::BlockVector Xtrialp(block_offsets_xsy); Xtrialp = 0.0;
 	 
 	 PredictorResidual(Xk, theta, thetaplus, rkp, reval_err);
 	 MFEM_VERIFY(reval_err == 0, "bad residual evaluation, this should have been caught\n");
@@ -333,7 +329,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       if (iAmRoot)
 	       {
 	          *hout << "CenManagement -- accepted linesearch trial point\n";
-	          *hout << "CenManagement -- theta = " << theta << endl;
+	          *hout << "CenManagement -- theta = " << theta << std::endl;
 	       }
 	    }
 	    else
@@ -343,8 +339,8 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	       {
 	          *hout << "CenManagement -- not in neighborhood\n";
 	          *hout << "CenManagement -- reducing t\n";
-	          *hout << "CenManagement -- t = " << t << endl;
-	          *hout << "CenManagement -- thetaplus = " << thetaplus << endl;
+	          *hout << "CenManagement -- t = " << t << std::endl;
+	          *hout << "CenManagement -- thetaplus = " << thetaplus << std::endl;
 	       }
 	    }
 	    i_linesearch += 1;
@@ -361,7 +357,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 beta1 = fbeta * beta0;
 	 // compute grad(||r||^2) = ...
          JGX.MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
-         double gk_norm = GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
+         double gk_norm = mfem::GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
 	 if (gk_norm < theta * epsgrad)
 	 {
 	    if (earlyTermination)
@@ -379,7 +375,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	 }
 	 else 
 	 {	 
-	    double Xk_norm = GlobalLpNorm(infinity(), Xk.Normlinf(), MPI_COMM_WORLD);
+	    double Xk_norm = mfem::GlobalLpNorm(mfem::infinity(), Xk.Normlinf(), MPI_COMM_WORLD);
 	    if (Xk_norm > deltabnd)
             {
 	       if (earlyTermination)
@@ -398,7 +394,7 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
 	    else
 	    {
 	       G(Xk, 0., GX0, Geval_err);
-	       double GX0_norm = GlobalLpNorm(2, GX0.Norml2(), MPI_COMM_WORLD);
+	       double GX0_norm = mfem::GlobalLpNorm(2, GX0.Norml2(), MPI_COMM_WORLD);
 	       if (GX0_norm > feps * tol && theta < tol)
 	       {
 	          if (earlyTermination)
@@ -432,15 +428,15 @@ void HomotopySolver::Mult(const Vector & x0, const Vector & y0, Vector & xf, Vec
  */
 
 
-void HomotopySolver::G(const BlockVector & X, const double theta, BlockVector & GX, int &Geval_err)
+void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err)
 {
    int Feval_err = 0;
    int Qeval_err = 0;
-   Vector tempx(dimx); tempx = 0.0;
+   mfem::Vector tempx(dimx); tempx = 0.0;
    // compute sqrt((x-s)^2 + 4(theta a)^q) term
    for (int i = 0; i < dimx; i++)
    {
-      tempx(i) = sqrt(pow(X(i) - X(i+dimx), 2) + 4.0 * pow(theta * ax(i), q)); 
+      tempx(i) = std::sqrt(std::pow(X(i) - X(i+dimx), 2) + 4.0 * std::pow(theta * ax(i), q)); 
    }
    GX.GetBlock(0).Set( 1.0, X.GetBlock(0));
    GX.GetBlock(0).Add( 1.0, X.GetBlock(1));
@@ -450,62 +446,62 @@ void HomotopySolver::G(const BlockVector & X, const double theta, BlockVector & 
    problem->F(X.GetBlock(0), X.GetBlock(2), tempx, Feval_err);
    for (int i = 0; i < dimx; i++)
    {
-      tempx(i) += pow(theta * gammax(i), p) * X(i);
+      tempx(i) += std::pow(theta * gammax(i), p) * X(i);
    }
    GX.GetBlock(1).Set( 1.0, X.GetBlock(1));
    GX.GetBlock(1).Add(-1.0, tempx);
    
-   Vector tempy(dimy); tempy = 0.0;
+   mfem::Vector tempy(dimy); tempy = 0.0;
    problem->Q(X.GetBlock(0), X.GetBlock(2), tempy, Qeval_err);
    for (int i = 0; i < dimy; i++)
    {
-      tempy(i) += pow(theta * gammay(i), p) * X.GetBlock(2)(i);
+      tempy(i) += std::pow(theta * gammay(i), p) * X.GetBlock(2)(i);
    }
    GX.GetBlock(2).Set(1.0, tempy);
-   Geval_err = max(Feval_err, Qeval_err);
+   Geval_err = std::max(Feval_err, Qeval_err);
 }
 
-double HomotopySolver::E(const BlockVector &X, int & Eeval_err)
+double HomotopySolver::E(const mfem::BlockVector &X, int & Eeval_err)
 {
-   Vector x(dimx); x = 0.0;
-   Vector s(dimx); s = 0.0;
+   mfem::Vector x(dimx); x = 0.0;
+   mfem::Vector s(dimx); s = 0.0;
    x.Set(1.0, X.GetBlock(0));
    s.Set(1.0, X.GetBlock(1));
-   Vector xsc(dimx); xsc = 0.0;
-   Vector ssc(dimx); ssc = 0.0;
+   mfem::Vector xsc(dimx); xsc = 0.0;
+   mfem::Vector ssc(dimx); ssc = 0.0;
    for (int i = 0; i < dimx; i++)
    {
-      xsc(i) = max(1.0, abs(x(i)) / f0);
-      ssc(i) = max(1.0, abs(s(i)) / f0);
+      xsc(i) = std::max(1.0, abs(x(i)) / f0);
+      ssc(i) = std::max(1.0, abs(s(i)) / f0);
    }
-   double xsc_1norm = GlobalLpNorm(1, xsc.Norml1(), MPI_COMM_WORLD);
-   double ssc_1norm = GlobalLpNorm(1, ssc.Norml1(), MPI_COMM_WORLD);
+   double xsc_1norm = mfem::GlobalLpNorm(1, xsc.Norml1(), MPI_COMM_WORLD);
+   double ssc_1norm = mfem::GlobalLpNorm(1, ssc.Norml1(), MPI_COMM_WORLD);
 
-   double xsc_infnorm = GlobalLpNorm(infinity(), xsc.Normlinf(), MPI_COMM_WORLD);
-   double ssc_infnorm = GlobalLpNorm(infinity(), ssc.Normlinf(), MPI_COMM_WORLD);
-   double Msc = max(xsc_infnorm, ssc_infnorm);
+   double xsc_infnorm = mfem::GlobalLpNorm(mfem::infinity(), xsc.Normlinf(), MPI_COMM_WORLD);
+   double ssc_infnorm = mfem::GlobalLpNorm(mfem::infinity(), ssc.Normlinf(), MPI_COMM_WORLD);
+   double Msc = std::max(xsc_infnorm, ssc_infnorm);
    double fz = 1.0;
    if( dimxglb > 0 ) {
-     fz = max(xsc_1norm, ssc_1norm) / ( static_cast<double>(dimxglb) ); 
+     fz = std::max(xsc_1norm, ssc_1norm) / ( static_cast<double>(dimxglb) ); 
    }
 
-   BlockVector r0(block_offsets_xsy); r0 = 0.0;
+   mfem::BlockVector r0(block_offsets_xsy); r0 = 0.0;
    Residual(X, 0.0, r0, Eeval_err); // residual at \theta = 0
 
-   Array<double> r0_infnorms(3);
+   mfem::Array<double> r0_infnorms(3);
    for (int i = 0; i < 3; i++)
    {
-      r0_infnorms[i] = GlobalLpNorm(infinity(), r0.GetBlock(i).Normlinf(), MPI_COMM_WORLD);
+      r0_infnorms[i] = mfem::GlobalLpNorm(mfem::infinity(), r0.GetBlock(i).Normlinf(), MPI_COMM_WORLD);
    }
-   Vector xs(dimx); xs = 0.0;
+   mfem::Vector xs(dimx); xs = 0.0;
    xs.Set(1.0, x);
    xs *= s;
-   double xs_infnorm = GlobalLpNorm(infinity(), xs.Normlinf(), MPI_COMM_WORLD);
+   double xs_infnorm = mfem::GlobalLpNorm(mfem::infinity(), xs.Normlinf(), MPI_COMM_WORLD);
    
    double Err = 0.;
    if (dimxglb > 0)
    {
-      Err = max(min(r0_infnorms[0] / fz, xs_infnorm / Msc), max(r0_infnorms[1], r0_infnorms[2]) / fz);
+      Err = std::max(std::min(r0_infnorms[0] / fz, xs_infnorm / Msc), std::max(r0_infnorms[1], r0_infnorms[2]) / fz);
    }
    else
    {
@@ -516,7 +512,7 @@ double HomotopySolver::E(const BlockVector &X, int & Eeval_err)
 
 
 
-void HomotopySolver::Residual(const BlockVector & X, const double theta, BlockVector & r, int & reval_err)
+void HomotopySolver::Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int & reval_err)
 {
    G(X, theta, r, reval_err);
    r.GetBlock(0).Add(-theta, bx);
@@ -524,7 +520,7 @@ void HomotopySolver::Residual(const BlockVector & X, const double theta, BlockVe
    r.GetBlock(2).Add(-theta, cy);
 }
 
-void HomotopySolver::ResidualFromG(const BlockVector & GX, const double theta, BlockVector & r)
+void HomotopySolver::ResidualFromG(const mfem::BlockVector & GX, const double theta, mfem::BlockVector & r)
 {
    r.Set(1.0, GX);
    r.GetBlock(0).Add(-theta, bx);
@@ -533,24 +529,24 @@ void HomotopySolver::ResidualFromG(const BlockVector & GX, const double theta, B
 }
 
 
-void HomotopySolver::PredictorResidual(const BlockVector & X, const double theta, const double thetaplus, BlockVector & r, int & reval_err)
+void HomotopySolver::PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err)
 {
    G(X, theta, r, reval_err);
    r.GetBlock(0).Add(-thetaplus, bx);
    r.GetBlock(1).Add(-thetaplus, cx);
    r.GetBlock(2).Add(-thetaplus, cy);
 
-   Vector tempx(dimx); tempx = 0.0;
+   mfem::Vector tempx(dimx); tempx = 0.0;
    for (int i = 0; i < dimx; i++)
    {
       tempx(i) = 2.0 * q * pow(theta * ax(i), q - 1.0);
    }
-   Vector temps(dimx); temps = 0.0;
+   mfem::Vector temps(dimx); temps = 0.0;
    for (int i = 0; i < dimx; i++)
    {
       temps(i) = p * pow(theta * gammax(i), p - 1) * X.GetBlock(0)(i);
    }
-   Vector tempy(dimy); tempy = 0.0;
+   mfem::Vector tempy(dimy); tempy = 0.0;
    for (int i = 0; i < dimy; i++)
    {
       tempy(i) = -p * pow(theta * gammay(i), p - 1) * X.GetBlock(2)(i);
@@ -566,14 +562,14 @@ void HomotopySolver::PredictorResidual(const BlockVector & X, const double theta
  * \nabla G_t(x, s, y) = [dG_(2,1)   dG_(2,2)   dG_(2,3)]
  *                       [dG_(3,1)     0        dG_(3,3)]
  */
-void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperator & JacG)
+void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::BlockOperator & JacG)
 {
    // I - diag( (x - s) / sqrt( (x - s)^2 + 4 * (\theta a)^q)
-   Vector diagJacGxx(dimx); diagJacGxx = 0.0;
+   mfem::Vector diagJacGxx(dimx); diagJacGxx = 0.0;
    for (int i = 0; i < dimx; i++)
    {
-      diagJacGxx(i) = 1.0 - (X(i) - X(i+dimx)) / sqrt(
-		     pow(X(i) - X(i+dimx), 2) + 4. * pow(theta * ax(i), q)); 
+      diagJacGxx(i) = 1.0 - (X(i) - X(i+dimx)) / std::sqrt(
+		     std::pow(X(i) - X(i+dimx), 2) + 4. * std::pow(theta * ax(i), q)); 
    }
    if (JGxx)
    {
@@ -583,7 +579,7 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
 
    // I + diag( (x - s) / sqrt( (x - s)^2 + 4 (\theta a)^q)
    // = 2 I - [I - diag( (x - s) / sqrt( (x - s)^2 + 4 * (\theta a)^q)]
-   Vector diagJacGxs(dimx);
+   mfem::Vector diagJacGxs(dimx);
    diagJacGxs = 2.0;
    diagJacGxs.Add(-1.0, diagJacGxx);
    if (JGxs)
@@ -598,17 +594,17 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
       delete JGsx; JGsx = nullptr;
    }
    dFdx = problem->DxF(X.GetBlock(0), X.GetBlock(2));
-   Vector diagtgx(dimx); diagtgx = 0.0;
+   mfem::Vector diagtgx(dimx); diagtgx = 0.0;
    for (int i = 0; i < dimx; i++)
    {
       diagtgx(i) = pow(theta * gammax(i), p);
    }
-   HypreParMatrix * Dtgx = GenerateHypreParMatrixFromDiagonal(dofOffsetsx, diagtgx);
-   JGsx = Add(-1.0, *dFdx, -1.0, *Dtgx);
+   mfem::HypreParMatrix * Dtgx = GenerateHypreParMatrixFromDiagonal(dofOffsetsx, diagtgx);
+   JGsx = mfem::Add(-1.0, *dFdx, -1.0, *Dtgx);
    delete Dtgx;
 
    // d / ds (G_t)_2 = I
-   Vector one(dimx); one = 1.0;
+   mfem::Vector one(dimx); one = 1.0;
    if (JGss)
    {
       delete JGss;
@@ -620,7 +616,7 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
    {
       delete JGsy;
    }
-   JGsy = new HypreParMatrix(*(problem->DyF(X.GetBlock(0), X.GetBlock(2))));
+   JGsy = new mfem::HypreParMatrix(*(problem->DyF(X.GetBlock(0), X.GetBlock(2))));
    one = -1.0;
    JGsy->ScaleRows(one);
    one = 1.0;
@@ -630,7 +626,7 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
    {
       delete JGyx;
    }
-   JGyx = new HypreParMatrix(*(problem->DxQ(X.GetBlock(0), X.GetBlock(2))));
+   JGyx = new mfem::HypreParMatrix(*(problem->DxQ(X.GetBlock(0), X.GetBlock(2))));
 
 
    // d / dy (G_t)_3 = dQ / dy + (t * \gamma_y)^p
@@ -639,13 +635,13 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
       delete JGyy;   
    }
    dQdy = problem->DyQ(X.GetBlock(0), X.GetBlock(2));
-   Vector diagtgy(dimy); diagtgy = 0.0;
+   mfem::Vector diagtgy(dimy); diagtgy = 0.0;
    for (int i = 0; i < dimy; i++)
    {
-      diagtgy(i) = pow(theta * gammay(i), p);
+      diagtgy(i) = std::pow(theta * gammay(i), p);
    }
-   HypreParMatrix * Dtgy = GenerateHypreParMatrixFromDiagonal(dofOffsetsy, diagtgy);
-   JGyy = Add(1.0, *dQdy, 1.0, *Dtgy);
+   mfem::HypreParMatrix * Dtgy = GenerateHypreParMatrixFromDiagonal(dofOffsetsy, diagtgy);
+   JGyy = mfem::Add(1.0, *dQdy, 1.0, *Dtgy);
    delete Dtgy; 
 
    JacG.SetBlock(0, 0, JGxx); JacG.SetBlock(0, 1, JGxs);
@@ -657,7 +653,7 @@ void HomotopySolver::JacG(const BlockVector &X, const double theta, BlockOperato
 
 
 // solve J dX_N = - rk
-void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, BlockVector & dXN)
+void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVector & rk, mfem::BlockVector & dXN)
 {
    if (linSolver)
    {
@@ -669,15 +665,15 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
    {
       int num_row_blocks = JkOp.NumRowBlocks();
       int num_col_blocks = JkOp.NumColBlocks();
-      Array2D<const HypreParMatrix *> JkBlockMat(num_row_blocks, num_col_blocks);
+      mfem::Array2D<const mfem::HypreParMatrix *> JkBlockMat(num_row_blocks, num_col_blocks);
       for(int i = 0; i < num_row_blocks; i++)
       {
          for(int j = 0; j < num_col_blocks; j++)
          {
             if(!JkOp.IsZeroBlock(i, j))
             {
-               JkBlockMat(i, j) = dynamic_cast<HypreParMatrix *>(&(JkOp.GetBlock(i, j)));
-               MFEM_VERIFY(JkBlockMat(i, j), "dynamic cast failure");
+               JkBlockMat(i, j) = dynamic_cast<mfem::HypreParMatrix *>(&(JkOp.GetBlock(i, j)));
+	       MFEM_VERIFY(JkBlockMat(i, j), "dynamic cast failure");
             }
             else
             {
@@ -686,23 +682,23 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
          }
       }
       
-      HypreParMatrix * Jk = HypreParMatrixFromBlocks(JkBlockMat);
+      mfem::HypreParMatrix * Jk = mfem::HypreParMatrixFromBlocks(JkBlockMat);
       /* direct solve of the 3x3 IP-Newton linear system */
 #ifdef MFEM_USE_STRUMPACK
-      linSolver = new STRUMPACKSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<STRUMPACKSolver*>(linSolver);
+      linSolver = new mfem::STRUMPACKSolver(MPI_COMM_WORLD);
+      auto linsolver = dynamic_cast<mfem::STRUMPACKSolver*>(linSolver);
       linsolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
       linsolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      STRUMPACKRowLocMatrix *Jkstrumpack = new STRUMPACKRowLocMatrix(*Jk);
+      mfem::STRUMPACKRowLocMatrix *Jkstrumpack = new mfem::STRUMPACKRowLocMatrix(*Jk);
       linsolver->SetOperator(*Jkstrumpack);
 #elif defined(MFEM_USE_MUMPS)
-      linSolver = new MUMPSSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<MUMPSSolver *>(linSolver);
+      linSolver = new mfem::MUMPSSolver(MPI_COMM_WORLD);
+      auto linsolver = dynamic_cast<mfem::MUMPSSolver *>(linSolver);
       linsolver->SetPrintLevel(0);
-      linsolver->SetMatrixSymType(MUMPSSolver::MatType::UNSYMMETRIC);
+      linsolver->SetMatrixSymType(mfem::MUMPSSolver::MatType::UNSYMMETRIC);
       linsolver->SetOperator(*Jk);
 #elif defined(MFEM_USE_MKL_CPARDISO)
-      linSolver = new CPardisoSolver(MPI_COMM_WORLD);
+      linSolver = new mfem::CPardisoSolver(MPI_COMM_WORLD);
       linSolver->SetOperator(*Jk);
 #else
       MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
@@ -718,9 +714,9 @@ void HomotopySolver::NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, B
    }
 }
 
-void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, const double delta, const BlockVector & dXN, BlockVector & dXtr)
+void HomotopySolver::DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockVector & gk, const double delta, const mfem::BlockVector & dXN, mfem::BlockVector & dXtr)
 {
-   double dXN_norm = GlobalLpNorm(2, dXN.Norml2(), MPI_COMM_WORLD);
+   double dXN_norm = mfem::GlobalLpNorm(2, dXN.Norml2(), MPI_COMM_WORLD);
    if (dXN_norm <= delta)
    {
       dXtr.Set(1.0, dXN);
@@ -731,12 +727,12 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
    }
    else
    {
-      BlockVector dXsd(block_offsets_xsy); dXsd = 0.0;
-      BlockVector Jkgk(block_offsets_xsy); Jkgk = 0.0;
+      mfem::BlockVector dXsd(block_offsets_xsy); dXsd = 0.0;
+      mfem::BlockVector Jkgk(block_offsets_xsy); Jkgk = 0.0;
       JkOp.Mult(gk, Jkgk);
-      double gk_norm = GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
-      double Jkgk_norm = GlobalLpNorm(2, Jkgk.Norml2(), MPI_COMM_WORLD);
-      dXsd.Set(-0.5 * pow(gk_norm, 2) / pow(Jkgk_norm, 2), gk);
+      double gk_norm = mfem::GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
+      double Jkgk_norm = mfem::GlobalLpNorm(2, Jkgk.Norml2(), MPI_COMM_WORLD);
+      dXsd.Set(-0.5 * std::pow(gk_norm, 2) / std::pow(Jkgk_norm, 2), gk);
 
       // || dXsd || = 0.5 * || gk ||^3 / || Jk gk||^2
       double dXsd_norm = 0.5 * pow(gk_norm, 3) / pow(Jkgk_norm, 2);
@@ -752,7 +748,7 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
       {
 	 double t_star;
 	 double a, b, c;
-	 double dXsdTdXN = InnerProduct(MPI_COMM_WORLD, dXN, dXsd);
+	 double dXsdTdXN = mfem::InnerProduct(MPI_COMM_WORLD, dXN, dXsd);
 	 a = pow(dXN_norm, 2) - 2.0 * dXsdTdXN + pow(dXsd_norm, 2);
 	 b = 2.0 * (dXsdTdXN - pow(dXsd_norm, 2));
 	 c = pow(dXsd_norm, 2) - pow(delta, 2);
@@ -776,12 +772,12 @@ void HomotopySolver::DogLeg(const BlockOperator & JkOp, const BlockVector & gk, 
    }
 }
 
-bool HomotopySolver::FilterCheck(const Vector & r_comp_norm)
+bool HomotopySolver::FilterCheck(const mfem::Vector & r_comp_norm)
 {
    // for each index j = 0, 1, 2 see if 
    // ||r_j(Xtrial)||_2 < alpha_j - gamma_f * || [alpha0; alpha1; alpha2;] ||_2
    // for all (alpha0, alpha1, alpha2) in the filter
-   Array<bool> reductionJ;  reductionJ.SetSize(3);
+   mfem::Array<bool> reductionJ;  reductionJ.SetSize(3);
    for (int j = 0; j < 3; j++)
    {
       reductionJ[j] = true;
@@ -819,9 +815,9 @@ bool HomotopySolver::FilterCheck(const Vector & r_comp_norm)
    return inFilteredRegion;
 }
 
-void HomotopySolver::UpdateFilter(const Vector & r_comp_norm)
+void HomotopySolver::UpdateFilter(const mfem::Vector & r_comp_norm)
 {
-   filter.Append(new Vector(3));
+   filter.Append(new mfem::Vector(3));
    for (int i = 0; i < 3; i++)
    {
       filter.Last()->Elem(i) = r_comp_norm(i);
@@ -838,7 +834,7 @@ void HomotopySolver::ClearFilter()
 }
 
 
-bool HomotopySolver::NeighborhoodCheck(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_)
+bool HomotopySolver::NeighborhoodCheck(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_)
 {
    if (useNeighborhood1)
    {
@@ -851,9 +847,9 @@ bool HomotopySolver::NeighborhoodCheck(const BlockVector & X, const BlockVector 
 }
 
 
-bool HomotopySolver::NeighborhoodCheck_1(const BlockVector & /*X*/, const BlockVector & r, const double theta, const double beta, double & betabar_)
+bool HomotopySolver::NeighborhoodCheck_1(const mfem::BlockVector & /*X*/, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_)
 {
-   double r_inf_norm = GlobalLpNorm(infinity(), r.Normlinf(), MPI_COMM_WORLD);
+   double r_inf_norm = mfem::GlobalLpNorm(mfem::infinity(), r.Normlinf(), MPI_COMM_WORLD);
    bool inNeighborhood = (r_inf_norm <= beta * theta);
    betabar_ = r_inf_norm / theta;
    return inNeighborhood;
@@ -861,22 +857,22 @@ bool HomotopySolver::NeighborhoodCheck_1(const BlockVector & /*X*/, const BlockV
 
 
 // see isInNeigh_2 method of numerial experiments branch of mHICOp
-bool HomotopySolver::NeighborhoodCheck_2(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_)
+bool HomotopySolver::NeighborhoodCheck_2(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_)
 {
-   double x_inf_norm = GlobalLpNorm(infinity(), X.GetBlock(0).Normlinf(), MPI_COMM_WORLD);
-   double s_inf_norm = GlobalLpNorm(infinity(), X.GetBlock(1).Normlinf(), MPI_COMM_WORLD);
-   double xs_inf_norm = max(x_inf_norm, s_inf_norm);
+   double x_inf_norm = mfem::GlobalLpNorm(mfem::infinity(), X.GetBlock(0).Normlinf(), MPI_COMM_WORLD);
+   double s_inf_norm = mfem::GlobalLpNorm(mfem::infinity(), X.GetBlock(1).Normlinf(), MPI_COMM_WORLD);
+   double xs_inf_norm = std::max(x_inf_norm, s_inf_norm);
 
 
-   Vector r_inf_norms(3); r_inf_norms = 0.0;
+   mfem::Vector r_inf_norms(3); r_inf_norms = 0.0;
    for (int i = 0; i < 3; i++)
    {
-      r_inf_norms(i) = GlobalLpNorm(infinity(), r.GetBlock(i).Normlinf(), MPI_COMM_WORLD);
+      r_inf_norms(i) = mfem::GlobalLpNorm(mfem::infinity(), r.GetBlock(i).Normlinf(), MPI_COMM_WORLD);
    }
 
 
-   bool inNeighborhood = ((r_inf_norms(0) <= beta * theta * xs_inf_norm) && (max(r_inf_norms(1), r_inf_norms(2)) <= beta * theta));
-   betabar_ = max(r_inf_norms(0) / (theta * xs_inf_norm), max(r_inf_norms(1), r_inf_norms(2)) / theta);
+   bool inNeighborhood = ((r_inf_norms(0) <= beta * theta * xs_inf_norm) && (std::max(r_inf_norms(1), r_inf_norms(2)) <= beta * theta));
+   betabar_ = std::max(r_inf_norms(0) / (theta * xs_inf_norm), std::max(r_inf_norms(1), r_inf_norms(2)) / theta);
    return inNeighborhood;
 }
 

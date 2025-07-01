@@ -1,11 +1,6 @@
 #include "mfem.hpp"
 #include "../problems/NLMCProblems.hpp"
 #include "../utilities.hpp"
-#include <fstream>
-#include <iostream>
-
-using namespace std;
-using namespace mfem;
 
 #ifndef HomotopySOLVER
 #define HomotopySOLVER
@@ -23,27 +18,26 @@ protected:
    bool earlyTermination = true;
 
 
-   // BlockVector X;
-   Array<int> block_offsets_xsy;
+   mfem::Array<int> block_offsets_xsy;
    
 
    // pointers to various HypreParMatrix
    // solver will not own these pointers
    // memory management should be handled by 
    // problem class 
-   HypreParMatrix * dFdx, * dFdy, * dQdx, * dQdy;
+   mfem::HypreParMatrix * dFdx, * dFdy, * dQdx, * dQdy;
 
-   HypreParMatrix * JGxx, * JGxs, * JGsx, * JGss, * JGsy, * JGyx,  * JGyy; 
-   Solver * linSolver; 
+   mfem::HypreParMatrix * JGxx, * JGxs, * JGsx, * JGss, * JGsy, * JGyx,  * JGyy; 
+   mfem::Solver * linSolver; 
    // Homotopy variable/parameters (eq 12.)
    double theta0 = 0.9;
    const double p = 1.5;
    const double q = 1.0;
-   Vector gammax, gammay;
-   Vector ax, bx, cx, cy;
+   mfem::Vector gammax, gammay;
+   mfem::Vector ax, bx, cx, cy;
 
    // filter
-   Array<Vector *> filter;
+   mfem::Array<mfem::Vector *> filter;
    
    double gammaf = 1.e-4;
 
@@ -78,22 +72,22 @@ protected:
    std::ostream * hout = &std::cout;
 public:
    HomotopySolver(GeneralNLMCProblem * problem_);
-   void Mult(const Vector & x0, const Vector & y0, Vector & xf, Vector & yf);
+   void Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf);
    bool GetConverged() const {  return converged;  };
-   double E(const BlockVector & X, int & Eeval_err);
-   void G(const BlockVector & X, const double theta, BlockVector & GX, int &Geval_err);
-   void Residual(const BlockVector & X, const double theta, BlockVector & r, int &reval_err);
-   void ResidualFromG(const BlockVector & GX, const double theta, BlockVector & r);
-   void PredictorResidual(const BlockVector & X, const double theta, const double thetaplus, BlockVector & r, int & reval_err);
-   void JacG(const BlockVector & X, const double theta, BlockOperator & JacG);
-   void NewtonSolve(BlockOperator & JkOp, const BlockVector & rk, BlockVector & dXN);
-   void DogLeg(const BlockOperator & JkOp, const BlockVector & gk, const double delta, const BlockVector & dXN, BlockVector & dXtr);
-   bool FilterCheck(const Vector & r_comp_norm);
-   void UpdateFilter(const Vector & r_comp_norm);
+   double E(const mfem::BlockVector & X, int & Eeval_err);
+   void G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err);
+   void Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int &reval_err);
+   void ResidualFromG(const mfem::BlockVector & GX, const double theta, mfem::BlockVector & r);
+   void PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err);
+   void JacG(const mfem::BlockVector & X, const double theta, mfem::BlockOperator & JacG);
+   void NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVector & rk, mfem::BlockVector & dXN);
+   void DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockVector & gk, const double delta, const mfem::BlockVector & dXN, mfem::BlockVector & dXtr);
+   bool FilterCheck(const mfem::Vector & r_comp_norm);
+   void UpdateFilter(const mfem::Vector & r_comp_norm);
    void ClearFilter();
-   bool NeighborhoodCheck(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_);
-   bool NeighborhoodCheck_1(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_);
-   bool NeighborhoodCheck_2(const BlockVector & X, const BlockVector & r, const double theta, const double beta, double & betabar_);
+   bool NeighborhoodCheck(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
+   bool NeighborhoodCheck_1(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
+   bool NeighborhoodCheck_2(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
    void SetEarlyTermination(bool earlyTermination_) { earlyTermination = earlyTermination_; };
@@ -101,7 +95,7 @@ public:
    {
       hout = hout_;
    };
-    void SetLinearSolver(Solver &solver_) { linSolver = &(solver_); };
+   void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
    virtual ~HomotopySolver();
 };
 
