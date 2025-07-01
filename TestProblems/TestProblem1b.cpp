@@ -10,7 +10,7 @@
 //              interior-point solver to solve the
 //              bound-constrained minimization problem
 //
-//              minimize_(x \in R^n) 1/2 x^T x subject to x - xl ≥ 0 (component-wise).
+//              minimize_(x \in R^n) 1/2 x^T x
 
 #include "mfem.hpp"
 #include <fstream>
@@ -23,28 +23,13 @@ using namespace std;
 using namespace mfem;
 
 
-// No constraints
-//
-/* NLMCP of the form
- * 0 <= x \perp F(x, y) >= 0
- *              Q(x, y)  = 0
- * with F(x, y) = y - u_l
- *      Q(x, y) = y - x
- * which corresponds to the first-order optimality conditions
- * for the convex quadratic programming problem
- * min_u (u^T u) / 2
- *  s.t.  u - u_l >= 0
- *  where x = z (Lagrange multiplier)
- *        y = u primal variable)
- */
-class Ex1aProblem : public ParOptProblem
+class Ex1bProblem : public ParOptProblem
 {
 protected:
-   Vector ul;
    HypreParMatrix * dgdu;
    HypreParMatrix * d2Edu2;
 public:
-   Ex1aProblem(int n);
+   Ex1bProblem(int n);
    double E(const Vector & u, int & eval_err);
 
    void DdE(const Vector & u, Vector & gradE);
@@ -54,9 +39,8 @@ public:
    void g(const Vector & u, Vector & gu, int & eval_err);
 
    HypreParMatrix * Ddg(const Vector &);
-   void Displayul(int myid);
 
-   virtual ~Ex1aProblem();
+   virtual ~Ex1bProblem();
 };
 
 
@@ -96,7 +80,7 @@ int main(int argc, char *argv[])
 
 
 
-   Ex1aProblem problem(n);
+   Ex1bProblem problem(n);
    ParInteriorPointSolver solver(&problem);
    int dimx = problem.GetDimU();
    int dimm = problem.GetDimM();
@@ -107,35 +91,22 @@ int main(int argc, char *argv[])
    solver.Mult(x0, xf);
 
 
-   //OptNLMCProblem problem(&optproblem); 
-   //int dimx = problem.GetDimx();
-   //int dimy = problem.GetDimy();
-
-   //cout << "dimx = " << dimx << endl;
-   //Vector x0(dimx); x0 = 0.0;
-   //Vector y0(dimy); y0 = 0.0;
-   //Vector xf(dimx); xf = 0.0;
-   //Vector yf(dimy); yf = 0.0;
-   //HomotopySolver solver(&problem);
-   //solver.SetMaxIter(nmcpSolverMaxIter);
-   //solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
    MFEM_VERIFY(converged, "solver did not converge\n");
    for (int i = 0; i < dimx; i++)
    {
       cout << "xf(" << i << ") = " << xf(i) << ", (rank = " << myid << ")\n";
    }
-   problem.Displayul(myid);
    Mpi::Finalize();
    return 0;
 }
 
 
 // Ex1Problem
-Ex1aProblem::Ex1aProblem(int n) : ParOptProblem(), 
+Ex1bProblem::Ex1bProblem(int n) : ParOptProblem(), 
 	dgdu(nullptr), d2Edu2(nullptr)
 {
-  MFEM_VERIFY(n >= 1, "Ex1aProblem::Ex1aProblem -- problem must have nontrivial size");
+  MFEM_VERIFY(n >= 1, "Ex1bProblem::Ex1bProblem -- problem must have nontrivial size");
 	
   // generate parallel partition  
   int nprocs = Mpi::WorldSize();
@@ -178,56 +149,40 @@ Ex1aProblem::Ex1aProblem(int n) : ParOptProblem(),
      dgdu = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsU, dofOffsetsM, dgdusparse);
      delete dgdusparse;
   }
-  
-  // random entries in [-1, 1]
-  ul.SetSize(dimM);
-  //ul.Randomize(myid);
-  //ul *= 2.0;
-  //ul -= 1.0;
 }
 
-double Ex1aProblem::E(const Vector & u, int & eval_err)
+double Ex1bProblem::E(const Vector & u, int & eval_err)
 {
    eval_err = 0;
    double Eeval = 0.5 * InnerProduct(MPI_COMM_WORLD, u, u);
    return Eeval;
 }
 
-void Ex1aProblem::DdE(const Vector & u, Vector & gradE)
+void Ex1bProblem::DdE(const Vector & u, Vector & gradE)
 {
   gradE.Set(1.0, u);
 }
 
-HypreParMatrix * Ex1aProblem::DddE(const Vector & u)
+HypreParMatrix * Ex1bProblem::DddE(const Vector & u)
 {
    return d2Edu2;
 }
 
-void Ex1aProblem::g(const Vector & u, Vector & gu, int & eval_err)
+void Ex1bProblem::g(const Vector & u, Vector & gu, int & eval_err)
 {
    eval_err = 0;
    gu = 0.0;
-   //gu.Set(1.0, u);
-   //gu.Add(-1.0, ul);
 }
 
-HypreParMatrix * Ex1aProblem::Ddg(const Vector & u)
+HypreParMatrix * Ex1bProblem::Ddg(const Vector & u)
 {
    return dgdu;
 }
 
 
-void Ex1aProblem::Displayul(int myid)
+Ex1bProblem::~Ex1bProblem()
 {
-   //for (int i = 0; i < dimU; i++)
-   //{
-   //   cout << "ul(" << i << ") = " << ul(i) << ", (rank = " << myid << ")\n";
-   //}
-}
-
-Ex1aProblem::~Ex1aProblem()
-{
-   //delete dgdu;
+   delete dgdu;
    delete d2Edu2;
 }
 

@@ -1,10 +1,5 @@
 #include "mfem.hpp"
 #include "../problems/OptProblems.hpp"
-#include <fstream>
-#include <iostream>
-
-using namespace std;
-using namespace mfem;
 
 
 #ifndef PARIPSOLVER 
@@ -17,13 +12,13 @@ protected:
     double OptTol;
     int  max_iter;
     double mu_k; // \mu_k
-    Vector lk, zlk;
+    mfem::Vector lk, zlk;
 
     double sMax, kSig, tauMin, eta, thetaMin, delta, sTheta, sPhi, kMu, thetaMu;
     double thetaMax, kSoc, gTheta, gPhi, kEps;
 	
     // filter
-    Array<double> F1, F2;
+    mfem::Array<double> F1, F2;
 	
     // quantities computed in lineSearch
     double alpha, alphaz;
@@ -34,12 +29,12 @@ protected:
 
     int dimU, dimM, dimC;
     int dimUGlb, dimMGlb, dimCGlb;
-    Array<int> block_offsetsumlz, block_offsetsuml, block_offsetsx;
-    Vector ml;
+    mfem::Array<int> block_offsetsumlz, block_offsetsuml, block_offsetsx;
+    mfem::Vector ml;
 
-    HypreParMatrix * Huu, * Hum, * Hmu, * Hmm, * Wmm, *D, * Ju, * Jm, * JuT, * JmT;
+    mfem::HypreParMatrix * Huu, * Hum, * Hmu, * Hmm, * Wmm, *D, * Ju, * Jm, * JuT, * JmT;
    
-    Solver * linSolver; 
+    mfem::Solver * linSolver; 
     int jOpt;
     bool converged;
     
@@ -49,57 +44,56 @@ protected:
     bool saveLogBarrierIterates;
     bool savedLogBarrierSol;
     double muLogBarrierSol;
-    Vector uLogBarrierSol, mLogBarrierSol, lLogBarrierSol, zlLogBarrierSol;
+    mfem::Vector uLogBarrierSol, mLogBarrierSol, lLogBarrierSol, zlLogBarrierSol;
 
     bool initializedm;
     bool initializedl;
     bool initializedzl;
-    Vector minit, linit, zlinit;
+    mfem::Vector minit, linit, zlinit;
     double linSolveTol;
     std::ostream * ipout = &std::cout;
 public:
     ParInteriorPointSolver(ParGeneralOptProblem*);
-    double MaxStepSize(Vector& , Vector& , Vector& , double);
-    double MaxStepSize(Vector& , Vector& , double);
-    void Mult(const BlockVector& , BlockVector&);
-    void Mult(const Vector&, Vector &); 
-    void GetLagrangeMultiplier(Vector &);
-    void FormIPNewtonMat(BlockVector& , Vector& , Vector& , BlockOperator &);
-    void IPNewtonSolve(BlockVector& , Vector& , Vector& , Vector&, BlockVector& , double);
-    void lineSearch(BlockVector& , BlockVector& , double);
-    void projectZ(const Vector & , Vector &, double);
+    double MaxStepSize(mfem::Vector& , mfem::Vector& , mfem::Vector& , double);
+    double MaxStepSize(mfem::Vector& , mfem::Vector& , double);
+    void Mult(const mfem::BlockVector& , mfem::BlockVector&);
+    void Mult(const mfem::Vector&, mfem::Vector &); 
+    void GetLagrangeMultiplier(mfem::Vector &);
+    void FormIPNewtonMat(mfem::BlockVector& , mfem::Vector& , mfem::Vector& , mfem::BlockOperator &);
+    void IPNewtonSolve(mfem::BlockVector& , mfem::Vector& , mfem::Vector& , mfem::Vector&, mfem::BlockVector& , double);
+    void lineSearch(mfem::BlockVector& , mfem::BlockVector& , double);
+    void projectZ(const mfem::Vector & , mfem::Vector &, double);
     void filterCheck(double, double);
-    double E(const BlockVector &, const Vector &, const Vector &, double, bool);
-    double E(const BlockVector &, const Vector &, const Vector &, bool);
+    double E(const mfem::BlockVector &, const mfem::Vector &, const mfem::Vector &, double, bool);
+    double E(const mfem::BlockVector &, const mfem::Vector &, const mfem::Vector &, bool);
     bool GetConverged() const;
-    // TO DO: include Hessian of Lagrangian
-    double theta(const BlockVector &, int &);
-    double phi(const BlockVector &, double, int &);
-    double theta(const BlockVector &);
-    double phi(const BlockVector &, double);
-    void Dxphi(const BlockVector &, double, BlockVector &);
-    double L(const BlockVector &, const Vector &, const Vector &);
-    void DxL(const BlockVector &, const Vector &, const Vector &, BlockVector &);
+    double theta(const mfem::BlockVector &, int &);
+    double phi(const mfem::BlockVector &, double, int &);
+    double theta(const mfem::BlockVector &);
+    double phi(const mfem::BlockVector &, double);
+    void Dxphi(const mfem::BlockVector &, double, mfem::BlockVector &);
+    double L(const mfem::BlockVector &, const mfem::Vector &, const mfem::Vector &);
+    void DxL(const mfem::BlockVector &, const mfem::Vector &, const mfem::Vector &, mfem::BlockVector &);
     void SetTol(double);
     void SetMaxIter(int);
     void SetBarrierParameter(double);
     void GetNumIterations(int &);    
     void SaveLogBarrierHessianIterates(bool);
     void SetLinearSolveTol(double);
-    void InitializeM(Vector &);
-    void InitializeL(Vector &);
-    void InitializeZl(Vector &);
-    void GetLogBarrierU(Vector &);
-    void GetLogBarrierM(Vector &);
-    void GetLogBarrierL(Vector &);
-    void GetLogBarrierZl(Vector &);
+    void InitializeM(mfem::Vector &);
+    void InitializeL(mfem::Vector &);
+    void InitializeZl(mfem::Vector &);
+    void GetLogBarrierU(mfem::Vector &);
+    void GetLogBarrierM(mfem::Vector &);
+    void GetLogBarrierL(mfem::Vector &);
+    void GetLogBarrierZl(mfem::Vector &);
     void GetLogBarrierMu(double &);
     void SetLogBarrierMu(double);
     void SetOutputStream(std::ostream * ipout_)
     {
        ipout = ipout_;
     };
-    void SetLinearSolver(Solver &solver_) { linSolver = &(solver_); };
+    void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
     virtual ~ParInteriorPointSolver();
 };
 
