@@ -42,6 +42,7 @@ set(continuation_sources
   problems/NLMCProblems.cpp
   problems/OptProblems.cpp
   solvers/HomotopySolver.cpp
+  solvers/CondensedHomotopySolver.cpp
   solvers/IPSolver.cpp
   utilities.cpp)
 
@@ -51,6 +52,7 @@ set(continuation_headers
   problems/Problems.hpp
   solvers/Solvers.hpp
   solvers/HomotopySolver.hpp
+  solvers/CondensedHomotopySolver.hpp
   solvers/IPSolver.hpp
   utilities.hpp)
 

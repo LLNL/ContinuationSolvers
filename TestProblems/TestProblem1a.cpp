@@ -17,6 +17,7 @@
 #include <iostream>
 #include "../problems/Problems.hpp"
 #include "../solvers/HomotopySolver.hpp"
+#include "../solvers/CondensedHomotopySolver.hpp"
 #include "../utilities.hpp"
 
 using namespace std;
@@ -73,12 +74,16 @@ int main(int argc, char *argv[])
    
    real_t nmcpSolverTol = 1.e-8;
    int nmcpSolverMaxIter = 30;
+   bool condensed_solve = false;
    args.AddOption(&n, "-n", "--n", 
 		   "Size of optimization variable.");
    args.AddOption(&nmcpSolverTol, "-nmcptol", "--nmcp-tol", 
 		   "Tolerance for NMCP solver.");
    args.AddOption(&nmcpSolverMaxIter, "-nmcpmaxiter", "--nmcp-maxiter",
                   "Maximum number of iterations for the NMCP solver.");
+   args.AddOption(&condensed_solve, "-condensed-solve", "--condensed-solve", "-monolithic-solve",
+                  "--monolithic-solve",
+                  "Whether or not to use the CondensedHomotopySolver.");
    args.Parse();
    if (!args.Good())
    {
@@ -107,6 +112,11 @@ int main(int argc, char *argv[])
    HomotopySolver solver(&problem);
    solver.SetTol(nmcpSolverTol);
    solver.SetMaxIter(nmcpSolverMaxIter);
+   CondensedHomotopySolver condensed_solver;
+   if (condensed_solve)
+   {
+      solver.SetLinearSolver(condensed_solver);
+   }
    solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
    MFEM_VERIFY(converged, "solver did not converge\n");
