@@ -8,8 +8,8 @@
 class CondensedHomotopySolver : public mfem::Solver
 {
 protected:
-	mfem::HypreParMatrix* Areduced;
-	mfem::Solver* AreducedSolver;
+	mfem::HypreParMatrix* Areduced = nullptr;
+	mfem::Solver* AreducedSolver = nullptr;
 	mfem::Array<int> blockOffsets;
 	mfem::Vector scale00;
 	mfem::Vector scale01;
