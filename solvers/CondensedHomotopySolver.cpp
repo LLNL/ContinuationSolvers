@@ -1,5 +1,6 @@
 
 #include "CondensedHomotopySolver.hpp"
+#include "Utilities.hpp"
 
 
 void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
@@ -63,7 +64,12 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
 
    if (AreducedSolver)
    {
-      AreducedSolver->SetOperator(*Areduced);
+      iter_solver = new mfem::CGSolver(A12->GetComm());
+      iter_solver->SetRelTol(1e-8);
+      iter_solver->SetMaxIter(500);
+      iter_solver->SetPrintLevel(3);
+      iter_solver->SetPreconditioner(*AreducedSolver);
+      iter_solver->SetOperator(*Areduced);
    }
 }
 
@@ -88,33 +94,12 @@ void CondensedHomotopySolver::Mult(const mfem::BlockVector& b, mfem::BlockVector
 
    if (AreducedSolver)
    {
-      AreducedSolver->Mult(b_reduced, x.GetBlock(2));
+      iter_solver->Mult(b_reduced, x.GetBlock(2));
    }
    else
    {
-#ifdef MFEM_USE_STRUMPACK
-      auto defaultSolver = new mfem::STRUMPACKSolver(MPI_COMM_WORLD);
-      defaultSolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
-      defaultSolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      auto Astrumpack = new mfem::STRUMPACKRowLocMatrix(*Areduced);
-      defaultSolver->SetOperator(*Astrumpack);
-#elif defined(MFEM_USE_MUMPS)
-      auto defaultSolver = new mfem::MUMPSSolver(MPI_COMM_WORLD);
-      defaultSolver->SetPrintLevel(0);
-      defaultSolver->SetMatrixSymType(mfem::MUMPSSolver::MatType::UNSYMMETRIC);
-      defaultSolver->SetOperator(*Areduced);
-#elif defined(MFEM_USE_MKL_CPARDISO)
-      auto defaultSolver = new mfem::CPardisoSolver(MPI_COMM_WORLD);
-      defaultSolver->SetOperator(*Areduced);
-#else
-      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
-#endif
-      defaultSolver->Mult(b_reduced, x.GetBlock(2));
-
-      delete defaultSolver;
-#ifdef MFEM_USE_STRUMPACK
-      delete Astrumpack;
-#endif
+      DirectSolver defaultSolver(*Areduced);
+      defaultSolver.Mult(b_reduced, x.GetBlock(2));
    }
 
    // recover the solution to the original system
@@ -140,5 +125,9 @@ CondensedHomotopySolver::~CondensedHomotopySolver()
    if (Areduced)
    {
       delete Areduced;
+   }
+   if (iter_solver)
+   {
+      delete iter_solver;
    }
 }

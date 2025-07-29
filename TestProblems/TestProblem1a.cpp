@@ -18,6 +18,7 @@
 #include "../problems/Problems.hpp"
 #include "../solvers/HomotopySolver.hpp"
 #include "../solvers/CondensedHomotopySolver.hpp"
+#include "../solvers/AMGF.hpp"
 #include "../utilities.hpp"
 
 using namespace std;
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
    real_t nmcpSolverTol = 1.e-8;
    int nmcpSolverMaxIter = 30;
    bool condensed_solve = false;
+   bool use_AMGF = false;
    args.AddOption(&n, "-n", "--n", 
 		   "Size of optimization variable.");
    args.AddOption(&nmcpSolverTol, "-nmcptol", "--nmcp-tol", 
@@ -82,8 +84,9 @@ int main(int argc, char *argv[])
    args.AddOption(&nmcpSolverMaxIter, "-nmcpmaxiter", "--nmcp-maxiter",
                   "Maximum number of iterations for the NMCP solver.");
    args.AddOption(&condensed_solve, "-condensed-solve", "--condensed-solve", "-monolithic-solve",
-                  "--monolithic-solve",
-                  "Whether or not to use the CondensedHomotopySolver.");
+                  "--monolithic-solve", "Whether or not to use the CondensedHomotopySolver.");
+   args.AddOption(&use_AMGF, "-AMGF", "--use-AMGF", "-no-AMGF", "--not-use-AMGF",
+                  "Whether or not to use AMGF for the reduced system in CondensedHomotopySolver.");
    args.Parse();
    if (!args.Good())
    {
@@ -112,10 +115,17 @@ int main(int argc, char *argv[])
    HomotopySolver solver(&problem);
    solver.SetTol(nmcpSolverTol);
    solver.SetMaxIter(nmcpSolverMaxIter);
-   CondensedHomotopySolver condensed_solver;
+   CondensedHomotopySolver* condensed_solver;
+   mfem::Solver* prec;
    if (condensed_solve)
    {
-      solver.SetLinearSolver(condensed_solver);
+      condensed_solver = new CondensedHomotopySolver();
+      if (use_AMGF)
+      {
+         prec = new AMGF(MPI_COMM_WORLD);
+         condensed_solver->SetPreconditioner(*prec);
+      }
+      solver.SetLinearSolver(*condensed_solver);
    }
    solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
@@ -125,6 +135,8 @@ int main(int argc, char *argv[])
       cout << "xf(" << i << ") = " << xf(i) << ", yf(" << i << ") = " << yf(i) << ", (rank = " << myid << ")\n";
    }
    optproblem.Displayul(myid);
+   delete prec;
+   delete condensed_solver;
    Mpi::Finalize();
    return 0;
 }

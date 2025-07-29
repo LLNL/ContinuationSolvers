@@ -8,8 +8,9 @@
 class CondensedHomotopySolver : public mfem::Solver
 {
 protected:
-	mfem::HypreParMatrix* Areduced;
-	mfem::Solver* AreducedSolver;
+	mfem::HypreParMatrix* Areduced = nullptr;
+	mfem::IterativeSolver* iter_solver = nullptr;
+	mfem::Solver* AreducedSolver = nullptr;
 	mfem::Array<int> blockOffsets;
 	mfem::Vector scale00;
 	mfem::Vector scale01;
@@ -22,7 +23,8 @@ public:
 	CondensedHomotopySolver() = default;
 
 	/// Set the solver for the reduced system.
-	void SetPreconditioner(mfem::Solver &solver) { AreducedSolver = &(solver); };
+	void SetPreconditioner(mfem::Solver &solver) { AreducedSolver = &(solver); }
+	mfem::Solver* GetPreconditioner() { return AreducedSolver; }
 
 	/**
 	 * @brief Sets the linear system to be solved.

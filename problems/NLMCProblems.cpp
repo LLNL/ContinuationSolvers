@@ -1,5 +1,6 @@
 #include "mfem.hpp"
 #include "NLMCProblems.hpp"
+#include "../solvers/Utilities.hpp"
 
 
 
@@ -59,6 +60,7 @@ OptNLMCProblem::OptNLMCProblem(ParOptProblem * optproblem_)
    dFdy = nullptr;
    dQdx = nullptr;
    dQdy = nullptr; 
+   Pc = nullptr;
 }
 
 // F(x, y) = g(y)
@@ -96,7 +98,8 @@ mfem::HypreParMatrix * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfe
 // dF/dy = dg/dy
 mfem::HypreParMatrix * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
-   return optproblem->Ddg(y);
+   dFdy = optproblem->Ddg(y);
+   return dFdy;
 }
 
 
@@ -122,6 +125,18 @@ mfem::HypreParMatrix * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfe
    return optproblem->DddE(y);
 }
 
+
+mfem::HypreParMatrix * OptNLMCProblem::GetRestrictionToConstrainedDofs()
+{
+   if (!Pc)
+   {
+      // TODO: could simply use dQdx instead of dFdy?
+      MFEM_ASSERT(dFdy, "dFdy has not been formed!");
+      Pc = NonZeroColMap(*dFdy);
+   }
+
+   return Pc;
+}
 
 
 OptNLMCProblem::~OptNLMCProblem()
