@@ -135,8 +135,14 @@ int main(int argc, char *argv[])
       cout << "xf(" << i << ") = " << xf(i) << ", yf(" << i << ") = " << yf(i) << ", (rank = " << myid << ")\n";
    }
    optproblem.Displayul(myid);
-   delete prec;
-   delete condensed_solver;
+   if (use_AMGF)
+   {
+      delete prec;
+   }
+   if (condensed_solve)
+   {
+      delete condensed_solver;
+   }
    Mpi::Finalize();
    return 0;
 }

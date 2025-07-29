@@ -662,7 +662,7 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
          if (amgf)
          {
             auto Pc = problem->GetRestrictionToConstrainedDofs();
-            amgf->SetContactTransferMap(*Pc);
+            amgf->SetFilteredTransferMap(*Pc);
          }
       }
 
