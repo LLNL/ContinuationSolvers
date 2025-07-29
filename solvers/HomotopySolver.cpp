@@ -2,7 +2,6 @@
 #include "HomotopySolver.hpp"
 #include "CondensedHomotopySolver.hpp"
 #include "AMGF.hpp"
-#include "Utilities.hpp"
 
 
 HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),

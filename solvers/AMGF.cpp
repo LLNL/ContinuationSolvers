@@ -1,5 +1,5 @@
 #include "AMGF.hpp"
-#include "Utilities.hpp"
+#include "../utilities.hpp"
 
 
 AMGF::AMGF(MPI_Comm comm_): mfem::Solver()

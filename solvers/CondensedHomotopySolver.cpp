@@ -1,6 +1,6 @@
 
 #include "CondensedHomotopySolver.hpp"
-#include "Utilities.hpp"
+#include "../utilities.hpp"
 
 
 void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
