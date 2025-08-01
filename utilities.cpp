@@ -263,6 +263,10 @@ void DirectSolver::SetOperator(const mfem::Operator& op)
    auto op_ptr = dynamic_cast<const mfem::HypreParMatrix *>(&op);
    MFEM_VERIFY(op_ptr, "op must be a mfem::HypreParMatrix!");
 
+   if (solver)
+   {
+      delete solver;
+   }
 #ifdef MFEM_USE_STRUMPACK
    auto directSolver = new mfem::STRUMPACKSolver(op_ptr->GetComm());
    directSolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);

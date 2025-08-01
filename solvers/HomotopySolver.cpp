@@ -654,17 +654,6 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
 {
    if (linSolver)
    {
-      auto condensedSolver = dynamic_cast<CondensedHomotopySolver*>(linSolver);
-      if (condensedSolver)
-      {
-         auto amgf = dynamic_cast<AMGF*>(condensedSolver->GetPreconditioner());
-         if (amgf)
-         {
-            auto Pc = problem->GetRestrictionToConstrainedDofs();
-            amgf->SetFilteredTransferMap(*Pc);
-         }
-      }
-
       linSolver->SetOperator(JkOp);
       linSolver->Mult(rk, dXN);
       dXN *= -1.0;

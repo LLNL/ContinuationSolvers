@@ -1,6 +1,7 @@
 #include "mfem.hpp"
 #include "../problems/OptProblems.hpp"
-
+#include "../utilities.hpp"
+#include "AMGF.hpp"
 
 #ifndef CONDENSEDHOMOTOPYSOLVER 
 #define CONDENSEDHOMOTOPYSOLVER
@@ -9,8 +10,9 @@ class CondensedHomotopySolver : public mfem::Solver
 {
 protected:
 	mfem::HypreParMatrix* Areduced = nullptr;
-	mfem::IterativeSolver* iter_solver = nullptr;
 	mfem::Solver* AreducedSolver = nullptr;
+        AMGF * amgf = nullptr;	
+	mfem::HypreParMatrix * P = nullptr;
 	mfem::Array<int> blockOffsets;
 	mfem::Vector scale00;
 	mfem::Vector scale01;
@@ -18,7 +20,7 @@ protected:
 	mfem::Vector scale11;
 	const mfem::HypreParMatrix* A12;
 	const mfem::HypreParMatrix* A20;
-    
+	bool use_amgf = true;
 public:
 	CondensedHomotopySolver() = default;
 
@@ -44,6 +46,7 @@ public:
 
 	void Mult(const mfem::Vector&, mfem::Vector &) const override; 
 	void Mult(const mfem::BlockVector& , mfem::BlockVector&) const;
+	void SetUseAMGF(bool use_amgf_) { use_amgf = use_amgf_; };
 
 	virtual ~CondensedHomotopySolver();
 };

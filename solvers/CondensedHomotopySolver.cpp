@@ -18,6 +18,14 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
    A20 = dynamic_cast<const mfem::HypreParMatrix *>(&blkOp->GetBlock(2, 0));
    auto A22 = dynamic_cast<const mfem::HypreParMatrix *>(&blkOp->GetBlock(2, 2));
 
+   if (use_amgf)
+   {
+      if (P)
+      {
+         delete P;
+      }
+      P = NonZeroColMap(*A12);
+   }
    // A00, A01, A10, A11 are diagonal matrices
    // TODO: add a check?
    mfem::Vector A00_d, A01_d, A10_d, A11_d;
@@ -59,18 +67,29 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
    scale01.Neg();
    mfem::HypreParMatrix * scaledProduct = mfem::ParMult(A20, &scaledA12);
    // FIXME: this requires A22 and scaledProduct to have the same offd_colmap?
+   if (Areduced)
+   {
+      delete Areduced;
+   }
    Areduced = ParAdd(A22, scaledProduct);
-   delete scaledProduct;
-
+   if (use_amgf)
+   {
+      if (amgf)
+      {
+         delete amgf;
+      }
+      amgf = new AMGF(*Areduced, *P);
+      auto iterative_solver = dynamic_cast<mfem::IterativeSolver *>(AreducedSolver);
+      if (iterative_solver)
+      {
+         iterative_solver->SetPreconditioner(*amgf);
+      }
+   }
    if (AreducedSolver)
    {
-      iter_solver = new mfem::CGSolver(A12->GetComm());
-      iter_solver->SetRelTol(1e-8);
-      iter_solver->SetMaxIter(500);
-      iter_solver->SetPrintLevel(3);
-      iter_solver->SetPreconditioner(*AreducedSolver);
-      iter_solver->SetOperator(*Areduced);
+      AreducedSolver->SetOperator(*Areduced);
    }
+   delete scaledProduct;
 }
 
 void CondensedHomotopySolver::Mult(const mfem::Vector &b, mfem::Vector &x) const
@@ -94,7 +113,7 @@ void CondensedHomotopySolver::Mult(const mfem::BlockVector& b, mfem::BlockVector
 
    if (AreducedSolver)
    {
-      iter_solver->Mult(b_reduced, x.GetBlock(2));
+       AreducedSolver->Mult(b_reduced, x.GetBlock(2));
    }
    else
    {
@@ -126,8 +145,12 @@ CondensedHomotopySolver::~CondensedHomotopySolver()
    {
       delete Areduced;
    }
-   if (iter_solver)
+   if (P)
    {
-      delete iter_solver;
+      delete P;
+   }
+   if (amgf)
+   {
+      delete amgf;
    }
 }

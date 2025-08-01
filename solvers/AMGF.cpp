@@ -52,6 +52,10 @@ void AMGF::SetFilteredTransferMap(const mfem::Operator & P)
 
 void AMGF::InitAMG()
 {
+    if (amg)
+    {
+       delete amg;
+    }
     amg = new mfem::HypreBoomerAMG(*A);
     amg->SetPrintLevel(0);
     amg->SetSystemsOptions(3);
@@ -60,6 +64,14 @@ void AMGF::InitAMG()
 
 void AMGF::InitFilteredSpaceSolver()
 {
+    if (Afiltered)
+    {
+       delete Afiltered;
+    }
+    if (Mfiltered)
+    {
+       delete Mfiltered;
+    }
     Afiltered = mfem::RAP(A, Pfiltered);
     Mfiltered = new DirectSolver(*Afiltered);
 }

@@ -116,15 +116,19 @@ int main(int argc, char *argv[])
    solver.SetTol(nmcpSolverTol);
    solver.SetMaxIter(nmcpSolverMaxIter);
    CondensedHomotopySolver* condensed_solver;
-   mfem::Solver* prec;
+   mfem::IterativeSolver* iterative_solver;
    if (condensed_solve)
    {
       condensed_solver = new CondensedHomotopySolver();
       if (use_AMGF)
       {
-         prec = new AMGF(MPI_COMM_WORLD);
-         condensed_solver->SetPreconditioner(*prec);
+         iterative_solver = new CGSolver(MPI_COMM_WORLD);
+	 iterative_solver->SetPrintLevel(1);
+	 iterative_solver->SetMaxIter(1000);
+	 iterative_solver->SetRelTol(1.e-12);
+         condensed_solver->SetPreconditioner(*iterative_solver);
       }
+      condensed_solver->SetUseAMGF(use_AMGF);
       solver.SetLinearSolver(*condensed_solver);
    }
    solver.Mult(x0, y0, xf, yf);
@@ -137,7 +141,7 @@ int main(int argc, char *argv[])
    optproblem.Displayul(myid);
    if (use_AMGF)
    {
-      delete prec;
+      delete iterative_solver;
    }
    if (condensed_solve)
    {
@@ -177,7 +181,6 @@ Ex1aProblem::Ex1aProblem(int n) : ParOptProblem(),
 	dofOffsets[1] = n;
      }
   }
-  cout << "dofOffsets[0] = " << dofOffsets[0] << ", dofOffsets[1] = " << dofOffsets[1] << ", (Rank = " << myid << ")\n"; 
   Init(dofOffsets, dofOffsets);
   delete[] dofOffsets;
 
