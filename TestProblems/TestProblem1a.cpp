@@ -18,7 +18,6 @@
 #include "../problems/Problems.hpp"
 #include "../solvers/HomotopySolver.hpp"
 #include "../solvers/CondensedHomotopySolver.hpp"
-#include "../solvers/AMGF.hpp"
 #include "../utilities.hpp"
 
 using namespace std;
