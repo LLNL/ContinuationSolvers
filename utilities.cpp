@@ -184,7 +184,7 @@ mfem::HypreParMatrix * NonZeroRowMap(const mfem::HypreParMatrix& A)
       mfem::SparseMatrix mergedA;
       const_cast<mfem::HypreParMatrix*>(&A)->MergeDiagAndOffd(mergedA);
       mfem::Array<int> nonZeroRows;
-      for (int i = 0; i < A.NumCols(); i++)
+      for (int i = 0; i < mergedA.NumRows(); i++)
       {
          if (!mergedA.RowIsEmpty(i))
          {

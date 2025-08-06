@@ -24,6 +24,7 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
       {
          delete P;
       }
+      
       P = NonZeroColMap(*A12);
    }
    // A00, A01, A10, A11 are diagonal matrices
@@ -66,11 +67,11 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
    scaledA12.ScaleRows(scale01);
    scale01.Neg();
    mfem::HypreParMatrix * scaledProduct = mfem::ParMult(A20, &scaledA12);
-   // FIXME: this requires A22 and scaledProduct to have the same offd_colmap?
    if (Areduced)
    {
       delete Areduced;
    }
+   // FIXME: this requires A22 and scaledProduct to have the same offd_colmap?
    Areduced = ParAdd(A22, scaledProduct);
    if (use_amgf)
    {
@@ -114,12 +115,21 @@ void CondensedHomotopySolver::Mult(const mfem::BlockVector& b, mfem::BlockVector
    if (AreducedSolver)
    {
        AreducedSolver->Mult(b_reduced, x.GetBlock(2));
+      	   
+       mfem::Vector residual(x.GetBlock(2).Size());
+       Areduced->Mult(x.GetBlock(2), residual);
+       residual.Add(-1.0, b_reduced);
+       double err = 0.0;
+       err = mfem::GlobalLpNorm(2, residual.Norml2(), MPI_COMM_WORLD);
+       std::cout << "||Areduced xreduced - breduced||_2 = " << err << std::endl;
    }
    else
    {
       DirectSolver defaultSolver(*Areduced);
       defaultSolver.Mult(b_reduced, x.GetBlock(2));
    }
+   
+
 
    // recover the solution to the original system
    mfem::Vector helper0(b.GetBlock(0));

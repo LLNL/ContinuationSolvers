@@ -25,8 +25,9 @@ public:
 	CondensedHomotopySolver() = default;
 
 	/// Set the solver for the reduced system.
-	void SetPreconditioner(mfem::Solver &solver) { AreducedSolver = &(solver); }
-	mfem::Solver* GetPreconditioner() { return AreducedSolver; }
+	void SetPreconditioner(mfem::Solver *solver) { AreducedSolver = (solver); };
+	void SetPreconditioner(mfem::Solver &solver) { AreducedSolver = &(solver); };
+	mfem::Solver* GetPreconditioner() { return AreducedSolver; };
 
 	/**
 	 * @brief Sets the linear system to be solved.

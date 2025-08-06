@@ -15,7 +15,7 @@ AMGF::AMGF(const mfem::Operator & Op, const mfem::Operator & P_)
    Init(APtr->GetComm());
    auto PPtr = dynamic_cast<const mfem::HypreParMatrix *>(&P_);
    MFEM_VERIFY(PPtr, "Transfer Map: not a compatible matrix type");
-   
+
    SetOperator(Op);
    SetFilteredTransferMap(P_);
 }
