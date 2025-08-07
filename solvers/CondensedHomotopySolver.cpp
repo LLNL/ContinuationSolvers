@@ -1,5 +1,6 @@
 
 #include "CondensedHomotopySolver.hpp"
+#include "../utilities.hpp"
 
 
 void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
@@ -17,6 +18,15 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
    A20 = dynamic_cast<const mfem::HypreParMatrix *>(&blkOp->GetBlock(2, 0));
    auto A22 = dynamic_cast<const mfem::HypreParMatrix *>(&blkOp->GetBlock(2, 2));
 
+   if (use_amgf)
+   {
+      if (P)
+      {
+         delete P;
+      }
+      
+      P = NonZeroColMap(*A12);
+   }
    // A00, A01, A10, A11 are diagonal matrices
    // TODO: add a check?
    mfem::Vector A00_d, A01_d, A10_d, A11_d;
@@ -57,14 +67,30 @@ void CondensedHomotopySolver::SetOperator(const mfem::Operator& op)
    scaledA12.ScaleRows(scale01);
    scale01.Neg();
    mfem::HypreParMatrix * scaledProduct = mfem::ParMult(A20, &scaledA12);
+   if (Areduced)
+   {
+      delete Areduced;
+   }
    // FIXME: this requires A22 and scaledProduct to have the same offd_colmap?
    Areduced = ParAdd(A22, scaledProduct);
-   delete scaledProduct;
-
+   if (use_amgf)
+   {
+      if (amgf)
+      {
+         delete amgf;
+      }
+      amgf = new AMGF(*Areduced, *P);
+      auto iterative_solver = dynamic_cast<mfem::IterativeSolver *>(AreducedSolver);
+      if (iterative_solver)
+      {
+         iterative_solver->SetPreconditioner(*amgf);
+      }
+   }
    if (AreducedSolver)
    {
       AreducedSolver->SetOperator(*Areduced);
    }
+   delete scaledProduct;
 }
 
 void CondensedHomotopySolver::Mult(const mfem::Vector &b, mfem::Vector &x) const
@@ -88,34 +114,22 @@ void CondensedHomotopySolver::Mult(const mfem::BlockVector& b, mfem::BlockVector
 
    if (AreducedSolver)
    {
-      AreducedSolver->Mult(b_reduced, x.GetBlock(2));
+       AreducedSolver->Mult(b_reduced, x.GetBlock(2));
+      	   
+       mfem::Vector residual(x.GetBlock(2).Size());
+       Areduced->Mult(x.GetBlock(2), residual);
+       residual.Add(-1.0, b_reduced);
+       double err = 0.0;
+       err = mfem::GlobalLpNorm(2, residual.Norml2(), MPI_COMM_WORLD);
+       std::cout << "||Areduced xreduced - breduced||_2 = " << err << std::endl;
    }
    else
    {
-#ifdef MFEM_USE_STRUMPACK
-      auto defaultSolver = new mfem::STRUMPACKSolver(MPI_COMM_WORLD);
-      defaultSolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
-      defaultSolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      auto Astrumpack = new mfem::STRUMPACKRowLocMatrix(*Areduced);
-      defaultSolver->SetOperator(*Astrumpack);
-#elif defined(MFEM_USE_MUMPS)
-      auto defaultSolver = new mfem::MUMPSSolver(MPI_COMM_WORLD);
-      defaultSolver->SetPrintLevel(0);
-      defaultSolver->SetMatrixSymType(mfem::MUMPSSolver::MatType::UNSYMMETRIC);
-      defaultSolver->SetOperator(*Areduced);
-#elif defined(MFEM_USE_MKL_CPARDISO)
-      auto defaultSolver = new mfem::CPardisoSolver(MPI_COMM_WORLD);
-      defaultSolver->SetOperator(*Areduced);
-#else
-      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
-#endif
-      defaultSolver->Mult(b_reduced, x.GetBlock(2));
-
-      delete defaultSolver;
-#ifdef MFEM_USE_STRUMPACK
-      delete Astrumpack;
-#endif
+      DirectSolver defaultSolver(*Areduced);
+      defaultSolver.Mult(b_reduced, x.GetBlock(2));
    }
+   
+
 
    // recover the solution to the original system
    mfem::Vector helper0(b.GetBlock(0));
@@ -140,5 +154,13 @@ CondensedHomotopySolver::~CondensedHomotopySolver()
    if (Areduced)
    {
       delete Areduced;
+   }
+   if (P)
+   {
+      delete P;
+   }
+   if (amgf)
+   {
+      delete amgf;
    }
 }

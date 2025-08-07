@@ -44,6 +44,7 @@ set(continuation_sources
   solvers/HomotopySolver.cpp
   solvers/CondensedHomotopySolver.cpp
   solvers/IPSolver.cpp
+  solvers/AMGF.cpp
   utilities.cpp)
 
 set(continuation_headers
@@ -54,6 +55,7 @@ set(continuation_headers
   solvers/HomotopySolver.hpp
   solvers/CondensedHomotopySolver.hpp
   solvers/IPSolver.hpp
+  solvers/AMGF.hpp
   utilities.hpp)
 
 set(continuation_depends

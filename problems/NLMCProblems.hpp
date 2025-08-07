@@ -35,6 +35,7 @@ public:
    HYPRE_BigInt * GetDofOffsetsy() const { return dofOffsetsy; }; 
    void setProblemLabel(int label_) { label = label_; };
    int getProblemLabel() { return label; };
+   virtual mfem::HypreParMatrix * GetRestrictionToConstrainedDofs() = 0;
    ~GeneralNLMCProblem();
 };
 
@@ -47,6 +48,8 @@ protected:
    mfem::HypreParMatrix * dFdy;
    mfem::HypreParMatrix * dQdx;
    mfem::HypreParMatrix * dQdy;
+   mfem::HypreParMatrix * Pc;
+
 public:
    OptNLMCProblem(ParOptProblem * problem_);
    void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
@@ -56,6 +59,7 @@ public:
    mfem::HypreParMatrix * DxQ(const mfem::Vector &x, const mfem::Vector &y);
    mfem::HypreParMatrix * DyQ(const mfem::Vector &x, const mfem::Vector &y);
    ParOptProblem * GetOptProblem() { return optproblem;  };
+   mfem::HypreParMatrix * GetRestrictionToConstrainedDofs() override;
    ~OptNLMCProblem();    
 };
 
