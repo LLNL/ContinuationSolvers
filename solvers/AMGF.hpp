@@ -19,7 +19,7 @@ private:
     mfem::HypreParMatrix * Afiltered = nullptr;
     mfem::Solver * Mfiltered = nullptr;
     bool additive = false;
-    int relax_type = 88;
+    int relax_type = 8;
     void Init(MPI_Comm comm_);
     void InitAMG();
     void InitFilteredSpaceSolver();
