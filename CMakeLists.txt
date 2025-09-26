@@ -42,7 +42,9 @@ set(continuation_sources
   problems/NLMCProblems.cpp
   problems/OptProblems.cpp
   solvers/HomotopySolver.cpp
+  solvers/CondensedHomotopySolver.cpp
   solvers/IPSolver.cpp
+  solvers/AMGF.cpp
   utilities.cpp)
 
 set(continuation_headers
@@ -51,7 +53,9 @@ set(continuation_headers
   problems/Problems.hpp
   solvers/Solvers.hpp
   solvers/HomotopySolver.hpp
+  solvers/CondensedHomotopySolver.hpp
   solvers/IPSolver.hpp
+  solvers/AMGF.hpp
   utilities.hpp)
 
 set(continuation_depends

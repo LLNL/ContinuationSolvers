@@ -1,10 +1,7 @@
 #include "mfem.hpp"
 #include "HomotopySolver.hpp"
-#ifdef MFEM_USE_STRUMPACK
-#include <StrumpackOptions.hpp>
-#include <mfem/linalg/strumpack.hpp>
-#endif
-
+#include "CondensedHomotopySolver.hpp"
+#include "AMGF.hpp"
 
 
 HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),
@@ -677,7 +674,7 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
             if(!JkOp.IsZeroBlock(i, j))
             {
                JkBlockMat(i, j) = dynamic_cast<mfem::HypreParMatrix *>(&(JkOp.GetBlock(i, j)));
-	       MFEM_VERIFY(JkBlockMat(i, j), "dynamic cast failure");
+	            MFEM_VERIFY(JkBlockMat(i, j), "dynamic cast failure");
             }
             else
             {
@@ -688,33 +685,19 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
       
       mfem::HypreParMatrix * Jk = mfem::HypreParMatrixFromBlocks(JkBlockMat);
       /* direct solve of the 3x3 IP-Newton linear system */
-#ifdef MFEM_USE_STRUMPACK
-      linSolver = new mfem::STRUMPACKSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<mfem::STRUMPACKSolver*>(linSolver);
-      linsolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
-      linsolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      mfem::STRUMPACKRowLocMatrix *Jkstrumpack = new mfem::STRUMPACKRowLocMatrix(*Jk);
-      linsolver->SetOperator(*Jkstrumpack);
-#elif defined(MFEM_USE_MUMPS)
-      linSolver = new mfem::MUMPSSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<mfem::MUMPSSolver *>(linSolver);
-      linsolver->SetPrintLevel(0);
-      linsolver->SetMatrixSymType(mfem::MUMPSSolver::MatType::UNSYMMETRIC);
-      linsolver->SetOperator(*Jk);
-#elif defined(MFEM_USE_MKL_CPARDISO)
-      linSolver = new mfem::CPardisoSolver(MPI_COMM_WORLD);
-      linSolver->SetOperator(*Jk);
-#else
-      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
-#endif
-      linSolver->Mult(rk, dXN);
+      DirectSolver directSolver(*Jk);
+      directSolver.Mult(rk, dXN);
       dXN *= -1.0;
       delete Jk;
-      delete linSolver;
-      linSolver = nullptr;
-#ifdef MFEM_USE_STRUMPACK
-      delete Jkstrumpack;
-#endif
+   }
+   
+   mfem::Vector errk(rk.Size()); errk = 0.0;
+   JkOp.Mult(dXN, errk);
+   errk.Add(1.0, rk);
+   double lin_err = mfem::GlobalLpNorm(2, errk.Norml2(), MPI_COMM_WORLD);
+   if (iAmRoot)
+   {
+      *hout << "||Jk * dXN + rk||_2 = " << lin_err << std::endl;
    }
 }
 
