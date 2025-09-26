@@ -23,7 +23,7 @@ using namespace std;
 using namespace mfem;
 
 
-class Ex1bProblem : public ParOptProblem
+class Ex1bProblem : public OptProblem
 {
 protected:
    HypreParMatrix * dgdu;
@@ -34,11 +34,11 @@ public:
 
    void DdE(const Vector & u, Vector & gradE);
 
-   HypreParMatrix * DddE(const Vector & u);
+   Operator * DddE(const Vector & u);
 
    void g(const Vector & u, Vector & gu, int & eval_err);
 
-   HypreParMatrix * Ddg(const Vector &);
+   Operator * Ddg(const Vector &);
 
    virtual ~Ex1bProblem();
 };
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
 
    Ex1bProblem problem(n);
-   ParInteriorPointSolver solver(&problem);
+   InteriorPointSolver solver(&problem);
    int dimx = problem.GetDimU();
    int dimm = problem.GetDimM();
    Vector x0(dimx); x0 = 0.0;
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
 
 // Ex1Problem
-Ex1bProblem::Ex1bProblem(int n) : ParOptProblem(), 
+Ex1bProblem::Ex1bProblem(int n) : OptProblem(), 
 	dgdu(nullptr), d2Edu2(nullptr)
 {
   MFEM_VERIFY(n >= 1, "Ex1bProblem::Ex1bProblem -- problem must have nontrivial size");
@@ -163,7 +163,7 @@ void Ex1bProblem::DdE(const Vector & u, Vector & gradE)
   gradE.Set(1.0, u);
 }
 
-HypreParMatrix * Ex1bProblem::DddE(const Vector & u)
+Operator * Ex1bProblem::DddE(const Vector & u)
 {
    return d2Edu2;
 }
@@ -174,7 +174,7 @@ void Ex1bProblem::g(const Vector & u, Vector & gu, int & eval_err)
    gu = 0.0;
 }
 
-HypreParMatrix * Ex1bProblem::Ddg(const Vector & u)
+Operator * Ex1bProblem::Ddg(const Vector & u)
 {
    return dgdu;
 }

@@ -3,9 +3,9 @@
 
 
 
-ParGeneralOptProblem::ParGeneralOptProblem() : block_offsetsx(3) { label = -1; }
+GeneralOptProblem::GeneralOptProblem() : block_offsetsx(3) { label = -1; }
 
-void ParGeneralOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM_)
+void GeneralOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM_)
 {
   dofOffsetsU = new HYPRE_BigInt[2];
   dofOffsetsM = new HYPRE_BigInt[2];
@@ -27,25 +27,25 @@ void ParGeneralOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofO
   MPI_Allreduce(&dimM, &dimMglb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 }
 
-double ParGeneralOptProblem::CalcObjective(const mfem::BlockVector &x)
+double GeneralOptProblem::CalcObjective(const mfem::BlockVector &x)
 {
   int eval_err; // throw away
   return CalcObjective(x, eval_err);
 }
 
-void ParGeneralOptProblem::CalcObjectiveGrad(const mfem::BlockVector &x, mfem::BlockVector &y)
+void GeneralOptProblem::CalcObjectiveGrad(const mfem::BlockVector &x, mfem::BlockVector &y)
 {
    Duf(x, y.GetBlock(0));
    Dmf(x, y.GetBlock(1));
 }
 
-void ParGeneralOptProblem::c(const mfem::BlockVector &x, mfem::Vector &y)
+void GeneralOptProblem::c(const mfem::BlockVector &x, mfem::Vector &y)
 {
   int eval_err; // throw-away
   return c(x, y, eval_err);
 }
 
-ParGeneralOptProblem::~ParGeneralOptProblem()
+GeneralOptProblem::~GeneralOptProblem()
 {
    block_offsetsx.DeleteAll();
 }
@@ -53,11 +53,11 @@ ParGeneralOptProblem::~ParGeneralOptProblem()
 
 // min E(d) s.t. g(d) >= 0
 // min_(d,s) E(d) s.t. c(d,s) := g(d) - s = 0, s >= 0
-ParOptProblem::ParOptProblem() : ParGeneralOptProblem()
+OptProblem::OptProblem() : GeneralOptProblem()
 {
 }
 
-void ParOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM_)
+void OptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM_)
 {
   dofOffsetsU = new HYPRE_BigInt[2];
   dofOffsetsM = new HYPRE_BigInt[2];
@@ -86,45 +86,45 @@ void ParOptProblem::Init(HYPRE_BigInt * dofOffsetsU_, HYPRE_BigInt * dofOffsetsM
 }
 
 
-double ParOptProblem::CalcObjective(const mfem::BlockVector &x, int & eval_err)
+double OptProblem::CalcObjective(const mfem::BlockVector &x, int & eval_err)
 { 
    return E(x.GetBlock(0), eval_err); 
 }
 
 
-void ParOptProblem::Duf(const mfem::BlockVector &x, mfem::Vector &y) { DdE(x.GetBlock(0), y); }
+void OptProblem::Duf(const mfem::BlockVector &x, mfem::Vector &y) { DdE(x.GetBlock(0), y); }
 
-void ParOptProblem::Dmf(const mfem::BlockVector & /*x*/, mfem::Vector &y) { y = 0.0; }
+void OptProblem::Dmf(const mfem::BlockVector & /*x*/, mfem::Vector &y) { y = 0.0; }
 
-mfem::HypreParMatrix * ParOptProblem::Duuf(const mfem::BlockVector &x) 
+mfem::Operator * OptProblem::Duuf(const mfem::BlockVector &x) 
 { 
    return DddE(x.GetBlock(0)); 
 }
 
-mfem::HypreParMatrix * ParOptProblem::Dumf(const mfem::BlockVector &/*x*/) { return nullptr; }
+mfem::Operator * OptProblem::Dumf(const mfem::BlockVector &/*x*/) { return nullptr; }
 
-mfem::HypreParMatrix * ParOptProblem::Dmuf(const mfem::BlockVector &/*x*/) { return nullptr; }
+mfem::Operator * OptProblem::Dmuf(const mfem::BlockVector &/*x*/) { return nullptr; }
 
-mfem::HypreParMatrix * ParOptProblem::Dmmf(const mfem::BlockVector &/*x*/) { return nullptr; }
+mfem::Operator * OptProblem::Dmmf(const mfem::BlockVector &/*x*/) { return nullptr; }
 
-void ParOptProblem::c(const mfem::BlockVector &x, mfem::Vector &y, int & eval_err) // c(u,m) = g(u) - m 
+void OptProblem::c(const mfem::BlockVector &x, mfem::Vector &y, int & eval_err) // c(u,m) = g(u) - m 
 {
    g(x.GetBlock(0), y, eval_err);
    y.Add(-1.0, x.GetBlock(1));  
 }
 
 
-mfem::HypreParMatrix * ParOptProblem::Duc(const mfem::BlockVector &x) 
+mfem::Operator * OptProblem::Duc(const mfem::BlockVector &x) 
 { 
    return Ddg(x.GetBlock(0)); 
 }
 
-mfem::HypreParMatrix * ParOptProblem::Dmc(const mfem::BlockVector &/*x*/) 
+mfem::Operator * OptProblem::Dmc(const mfem::BlockVector &/*x*/) 
 { 
    return Ih;
 } 
 
-ParOptProblem::~ParOptProblem() 
+OptProblem::~OptProblem() 
 {
   delete[] dofOffsetsU;
   delete[] dofOffsetsM;
@@ -136,7 +136,7 @@ ParOptProblem::~ParOptProblem()
 
 
 
-ReducedProblem::ReducedProblem(ParOptProblem * problem_, HYPRE_Int * constraintMask)
+ReducedOptProblem::ReducedOptProblem(OptProblem * problem_, HYPRE_Int * constraintMask)
 {
   problem = problem_;
   J = nullptr;
@@ -170,7 +170,7 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, HYPRE_Int * constraintM
   delete[] constraintOffsets;
 }
 
-ReducedProblem::ReducedProblem(ParOptProblem * problem_, mfem::HypreParVector & constraintMask)
+ReducedOptProblem::ReducedOptProblem(OptProblem * problem_, mfem::HypreParVector & constraintMask)
 {
   problem = problem_;
   J = nullptr;
@@ -206,25 +206,25 @@ ReducedProblem::ReducedProblem(ParOptProblem * problem_, mfem::HypreParVector & 
 }
 
 // energy objective E(d)
-double ReducedProblem::E(const mfem::Vector &d, int & eval_err)
+double ReducedOptProblem::E(const mfem::Vector &d, int & eval_err)
 {
   return problem->E(d, eval_err);
 }
 
 
 // gradient of energy objective
-void ReducedProblem::DdE(const mfem::Vector &d, mfem::Vector & gradE)
+void ReducedOptProblem::DdE(const mfem::Vector &d, mfem::Vector & gradE)
 {
   problem->DdE(d, gradE);
 }
 
 
-mfem::HypreParMatrix * ReducedProblem::DddE(const mfem::Vector &d)
+mfem::Operator * ReducedOptProblem::DddE(const mfem::Vector &d)
 {
   return problem->DddE(d);
 }
 
-void ReducedProblem::g(const mfem::Vector &d, mfem::Vector &gd, int & eval_err)
+void ReducedOptProblem::g(const mfem::Vector &d, mfem::Vector &gd, int & eval_err)
 {
   mfem::Vector gdfull(problem->GetDimM()); gdfull = 0.0;
   problem->g(d, gdfull, eval_err);
@@ -232,18 +232,20 @@ void ReducedProblem::g(const mfem::Vector &d, mfem::Vector &gd, int & eval_err)
 }
 
 
-mfem::HypreParMatrix * ReducedProblem::Ddg(const mfem::Vector &d)
+mfem::Operator * ReducedOptProblem::Ddg(const mfem::Vector &d)
 {
-  mfem::HypreParMatrix * Jfull = problem->Ddg(d);
+  mfem::Operator * Jfull = problem->Ddg(d);
+  auto Jfull_hypre = dynamic_cast<mfem::HypreParMatrix *>(Jfull);
+  MFEM_VERIFY(Jfull_hypre, "expecting Ddg to be a HypreParMatrix"); 
   if (J)
   {
     delete J; J = nullptr;
   }
-  J = ParMult(P, Jfull, true);
+  J = ParMult(P, Jfull_hypre, true);
   return J;
 }
 
-ReducedProblem::~ReducedProblem()
+ReducedOptProblem::~ReducedOptProblem()
 {
   delete P;
   if (J)

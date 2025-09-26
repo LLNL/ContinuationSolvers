@@ -44,7 +44,7 @@ GeneralNLMCProblem::~GeneralNLMCProblem()
 // ------------------------------------
 
 
-OptNLMCProblem::OptNLMCProblem(ParOptProblem * optproblem_)
+OptNLMCProblem::OptNLMCProblem(OptProblem * optproblem_)
 {
    optproblem = optproblem_;
    
@@ -78,7 +78,7 @@ void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vec
   
   optproblem->DdE(y, qeval);
   
-  mfem::HypreParMatrix * J = optproblem->Ddg(y);
+  mfem::Operator * J = optproblem->Ddg(y);
   mfem::Vector temp(dimy); temp = 0.0;
   J->MultTranspose(x, temp);
   
@@ -88,28 +88,30 @@ void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vec
 
 
 // dF/dx = 0
-mfem::HypreParMatrix * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vector & /*y*/)
+mfem::Operator * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vector & /*y*/)
 {
    return dFdx;
 }
 
 // dF/dy = dg/dy
-mfem::HypreParMatrix * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
    return optproblem->Ddg(y);
 }
 
 
 // dQ/dx = -(dg/dy)^T
-mfem::HypreParMatrix * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
-   mfem::HypreParMatrix * J = optproblem->Ddg(y);
+   mfem::Operator * J = optproblem->Ddg(y);
+   auto Jhypre = dynamic_cast<mfem::HypreParMatrix *>(J);
+   MFEM_VERIFY(Jhypre, "expecting a HypreParMatrix Ddg");
    if (dQdx)
    {
       delete dQdx;
       dQdx = nullptr;
    }
-   dQdx = J->Transpose();
+   dQdx = Jhypre->Transpose();
    mfem::Vector temp(dimy); temp = -1.0;
    dQdx->ScaleRows(temp);
    return dQdx;
@@ -117,7 +119,7 @@ mfem::HypreParMatrix * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfe
 
 
 // dQdy = Hessian(E) - second order derivaives in g
-mfem::HypreParMatrix * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
    return optproblem->DddE(y);
 }

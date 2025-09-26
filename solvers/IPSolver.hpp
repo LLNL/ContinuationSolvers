@@ -5,10 +5,10 @@
 #ifndef PARIPSOLVER 
 #define PARIPSOLVER
 
-class ParInteriorPointSolver
+class InteriorPointSolver
 {
 protected:
-    ParGeneralOptProblem* problem;
+    GeneralOptProblem* problem;
     double OptTol;
     int  max_iter;
     double mu_k; // \mu_k
@@ -53,7 +53,7 @@ protected:
     double linSolveTol;
     std::ostream * ipout = &std::cout;
 public:
-    ParInteriorPointSolver(ParGeneralOptProblem*);
+    InteriorPointSolver(GeneralOptProblem*);
     double MaxStepSize(mfem::Vector& , mfem::Vector& , mfem::Vector& , double);
     double MaxStepSize(mfem::Vector& , mfem::Vector& , double);
     void Mult(const mfem::BlockVector& , mfem::BlockVector&);
@@ -94,7 +94,7 @@ public:
        ipout = ipout_;
     };
     void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
-    virtual ~ParInteriorPointSolver();
+    virtual ~InteriorPointSolver();
 };
 
 #endif

@@ -23,10 +23,10 @@ public:
    virtual void Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOffsetsy_);
    virtual void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const = 0;
    virtual void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const = 0;
-   virtual mfem::HypreParMatrix * DxF(const mfem::Vector &x, const mfem::Vector &y) = 0;
-   virtual mfem::HypreParMatrix * DyF(const mfem::Vector &x, const mfem::Vector &y) = 0;
-   virtual mfem::HypreParMatrix * DxQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
-   virtual mfem::HypreParMatrix * DyQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
+   virtual mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
    int GetDimx() const { return dimx; };
    int GetDimy() const { return dimy; }; 
    HYPRE_BigInt GetDimxGlb() const { return dimxglb; };
@@ -42,20 +42,20 @@ public:
 class OptNLMCProblem : public GeneralNLMCProblem
 {
 protected:
-   ParOptProblem * optproblem;
+   OptProblem * optproblem;
    mfem::HypreParMatrix * dFdx;
    mfem::HypreParMatrix * dFdy;
    mfem::HypreParMatrix * dQdx;
    mfem::HypreParMatrix * dQdy;
 public:
-   OptNLMCProblem(ParOptProblem * problem_);
+   OptNLMCProblem(OptProblem * problem_);
    void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
    void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const;
-   mfem::HypreParMatrix * DxF(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::HypreParMatrix * DyF(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::HypreParMatrix * DxQ(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::HypreParMatrix * DyQ(const mfem::Vector &x, const mfem::Vector &y);
-   ParOptProblem * GetOptProblem() { return optproblem;  };
+   mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
+   OptProblem * GetOptProblem() { return optproblem;  };
    ~OptNLMCProblem();    
 };
 

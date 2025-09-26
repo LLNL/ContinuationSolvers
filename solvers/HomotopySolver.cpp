@@ -593,7 +593,7 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGsx; JGsx = nullptr;
    }
-   dFdx = problem->DxF(X.GetBlock(0), X.GetBlock(2));
+   dFdx = dynamic_cast<mfem::HypreParMatrix*>(problem->DxF(X.GetBlock(0), X.GetBlock(2)));
    mfem::Vector diagtgx(dimx); diagtgx = 0.0;
    for (int i = 0; i < dimx; i++)
    {
@@ -616,7 +616,10 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGsy;
    }
-   JGsy = new mfem::HypreParMatrix(*(problem->DyF(X.GetBlock(0), X.GetBlock(2))));
+   mfem::HypreParMatrix * temp_mat;
+   temp_mat = dynamic_cast<mfem::HypreParMatrix *>(problem->DyF(X.GetBlock(0), X.GetBlock(2)));
+   // make a copy that we manipulate
+   JGsy = new mfem::HypreParMatrix(*temp_mat);
    one = -1.0;
    JGsy->ScaleRows(one);
    one = 1.0;
@@ -626,7 +629,8 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGyx;
    }
-   JGyx = new mfem::HypreParMatrix(*(problem->DxQ(X.GetBlock(0), X.GetBlock(2))));
+   temp_mat = dynamic_cast<mfem::HypreParMatrix *>(problem->DxQ(X.GetBlock(0), X.GetBlock(2)));
+   JGyx = new mfem::HypreParMatrix(*temp_mat);
 
 
    // d / dy (G_t)_3 = dQ / dy + (t * \gamma_y)^p
@@ -634,7 +638,7 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGyy;   
    }
-   dQdy = problem->DyQ(X.GetBlock(0), X.GetBlock(2));
+   dQdy = dynamic_cast<mfem::HypreParMatrix*>(problem->DyQ(X.GetBlock(0), X.GetBlock(2)));
    mfem::Vector diagtgy(dimy); diagtgy = 0.0;
    for (int i = 0; i < dimy; i++)
    {
