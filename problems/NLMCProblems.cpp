@@ -127,19 +127,6 @@ mfem::Operator * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vec
 }
 
 
-mfem::HypreParMatrix * OptNLMCProblem::GetRestrictionToConstrainedDofs()
-{
-   if (!Pc)
-   {
-      // TODO: could simply use dQdx instead of dFdy?
-      MFEM_ASSERT(dFdy, "dFdy has not been formed!");
-      Pc = NonZeroColMap(*dFdy);
-   }
-
-   return Pc;
-}
-
-
 OptNLMCProblem::~OptNLMCProblem()
 {
    delete dFdx;

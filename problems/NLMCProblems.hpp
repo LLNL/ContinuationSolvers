@@ -35,7 +35,6 @@ public:
    HYPRE_BigInt * GetDofOffsetsy() const { return dofOffsetsy; }; 
    void setProblemLabel(int label_) { label = label_; };
    int getProblemLabel() { return label; };
-   virtual mfem::HypreParMatrix * GetRestrictionToConstrainedDofs() = 0;
    ~GeneralNLMCProblem();
 };
 
@@ -59,7 +58,6 @@ public:
    mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y);
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
    OptProblem * GetOptProblem() { return optproblem;  };
-   mfem::HypreParMatrix * GetRestrictionToConstrainedDofs() override;
    ~OptNLMCProblem();    
 };
 
@@ -88,9 +86,9 @@ public:
    virtual mfem::HypreParMatrix * constraintJacobian(const mfem::Vector & u) const = 0;
    void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
    void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const;
-   mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y) {  return dFdx; };
-   mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y) { return dFdy; };
-   mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y) { return dQdx; };
+   mfem::Operator * DxF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dFdx; };
+   mfem::Operator * DyF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dFdy; };
+   mfem::Operator * DxQ(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dQdx; };
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
    ~EqualityConstrainedHomotopyProblem();    
 };
