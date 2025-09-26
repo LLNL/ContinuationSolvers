@@ -98,8 +98,7 @@ mfem::Operator * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vec
 // dF/dy = dg/dy
 mfem::Operator * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
 {
-   dFdy = optproblem->Ddg(y);
-   return dFdy;
+   return optproblem->Ddg(y);
 }
 
 
@@ -148,5 +147,155 @@ OptNLMCProblem::~OptNLMCProblem()
    {
       delete dQdx;
    }
-}
+};
+
+EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem()
+{
+   y_partition.SetSize(3);
+};
+
+void EqualityConstrainedHomotopyProblem::SetSizes(int dimu_, int dimc_)
+{
+   set_sizes = true;
+   dimu = dimu_;
+   dimc = dimc_;
+   // TODO: when to delete uOffsets, cOffsets?
+   uOffsets = new HYPRE_BigInt[2];
+   cOffsets = new HYPRE_BigInt[2];
+   uOffsets[0] = 0;
+   uOffsets[1] = dimu;
+   cOffsets[0] = 0;
+   cOffsets[1] = dimc;
+   y_partition[0] = 0;
+   y_partition[1] = dimu;
+   y_partition[2] = dimc;
+   y_partition.PartialSum();
+
+   Init(cOffsets, uOffsets);
+   // dF / dx 0 x 0 matrix
+   {
+     int nentries = 0;
+     auto temp = new mfem::SparseMatrix(dimx, dimxglb, nentries);
+     dFdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsx, temp);
+     delete temp;
+   }
+
+   // dF / dy 0 x dimy matrix
+   {
+     int nentries = 0;
+     auto temp = new mfem::SparseMatrix(dimx, dimyglb, nentries);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, temp);
+     delete temp;
+   }
+
+   // dQ / dx dimy x 0 matrix
+   {
+     int nentries = 0;
+     auto temp = new mfem::SparseMatrix(dimy, dimxglb, nentries);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, temp);
+     delete temp;
+   }
+};
+
+void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err) const
+{
+   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
+   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx,
+              "F -- Inconsistent dimensions");
+  feval = 0.0;
+  Feval_err = 0;
+};
+
+// Q = [  r + (dc/du)^T l]
+//     [ -c ]
+void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& qeval, int& Qeval_err) const
+{
+  MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
+  MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy,
+              "Q -- Inconsistent dimensions");
+  qeval = 0.0;
+  mfem::BlockVector yblock(y_partition);
+  yblock.Set(1.0, y);
+  mfem::BlockVector qblock(y_partition);
+  qblock = 0.0;
+
+  auto u = yblock.GetBlock(0);
+  auto l = yblock.GetBlock(1);
+  auto residual_vector = residual(u);
+  qblock.GetBlock(0).Set(1.0, residual_vector);
+  auto residual_contribution = jTvp(u, l);
+  
+  auto constraint_eval = constraint(u);
+  constraint_eval *= -1.0;
+  qblock.GetBlock(1).Set(-1.0, constraint_eval);
+
+  qeval.Set(1.0, qblock);
+
+  Qeval_err = 0;
+  int Qeval_err_loc = 0;
+  for (int i = 0; i < qeval.Size(); i++) {
+    if (std::isnan(qeval(i))) {
+      Qeval_err_loc = 1;
+      break;
+    }
+  }
+  MPI_Allreduce(&Qeval_err_loc, &Qeval_err, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  if (Qeval_err > 0) {
+    Qeval_err = 1;
+  }
+  if (Qeval_err > 0 && mfem::Mpi::WorldRank() == 0) {
+    std::cout << "at least one nan entry\n";
+  }
+};
+
+
+// dQdy = [ dr/du   dc/du^T]
+//        [-dc/du   0  ]
+mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*/, const mfem::Vector& y)
+{
+  MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
+  MFEM_VERIFY(y.Size() == dimy, "InertialReliefProblem::DyQ -- Inconsistent dimensions");
+  // note we are neglecting Hessian constraint terms
+  mfem::BlockVector yblock(y_partition);
+  yblock.Set(1.0, y);
+  mfem::BlockVector qblock(y_partition);
+  qblock = 0.0;
+
+  auto u = yblock.GetBlock(0);
+  if (dQdy) {
+    delete dQdy;
+  }
+  {
+    auto drdu = residualJacobian(u);
+    auto negdcdu = constraintJacobian(u);
+    auto dcduT = negdcdu->Transpose();
+    mfem::Vector scale(dimc); scale = -1.0;
+    negdcdu->ScaleRows(scale);
+
+    mfem::Array2D<const mfem::HypreParMatrix*> BlockMat(2, 2);
+    BlockMat(0, 0) = drdu;
+    BlockMat(0, 1) = dcduT;
+    BlockMat(1, 0) = negdcdu;
+    BlockMat(1, 1) = nullptr;
+    dQdy = HypreParMatrixFromBlocks(BlockMat);
+    delete dcduT;
+  }
+  return dQdy;
+};
+
+EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
+{
+  if (set_sizes)
+  {
+     delete[] uOffsets;
+     delete[] cOffsets;
+     delete dFdx;
+     delete dFdy;
+     delete dQdx;
+  };
+  if (dQdy)
+  {
+     dQdy;
+  }
+};
 
