@@ -690,15 +690,6 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
       dXN *= -1.0;
       delete Jk;
    }
-   
-   mfem::Vector errk(rk.Size()); errk = 0.0;
-   JkOp.Mult(dXN, errk);
-   errk.Add(1.0, rk);
-   double lin_err = mfem::GlobalLpNorm(2, errk.Norml2(), MPI_COMM_WORLD);
-   if (iAmRoot)
-   {
-      *hout << "||Jk * dXN + rk||_2 = " << lin_err << std::endl;
-   }
 }
 
 void HomotopySolver::DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockVector & gk, const double delta, const mfem::BlockVector & dXN, mfem::BlockVector & dXtr)

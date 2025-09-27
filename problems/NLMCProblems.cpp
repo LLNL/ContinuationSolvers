@@ -293,6 +293,6 @@ EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
   if (dQdy)
   {
      dQdy;
-  }
+  };
 };
 
