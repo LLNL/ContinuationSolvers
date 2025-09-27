@@ -73,8 +73,8 @@ protected:
    int dimc;
    int dimcglb;
    mfem::Array<int> y_partition;
-   HYPRE_BigInt * uOffsets = nullptr;
-   HYPRE_BigInt * cOffsets = nullptr;
+   HYPRE_BigInt * uOffsets_ = nullptr;
+   HYPRE_BigInt * cOffsets_ = nullptr;
    bool set_sizes = false;
 public:
    EqualityConstrainedHomotopyProblem();

@@ -146,19 +146,28 @@ void EqualityConstrainedHomotopyProblem::SetSizes(int dimu_, int dimc_)
    set_sizes = true;
    dimu = dimu_;
    dimc = dimc_;
-   // TODO: when to delete uOffsets, cOffsets?
-   uOffsets = new HYPRE_BigInt[2];
-   cOffsets = new HYPRE_BigInt[2];
-   uOffsets[0] = 0;
-   uOffsets[1] = dimu;
-   cOffsets[0] = 0;
-   cOffsets[1] = dimc;
+   uOffsets_ = new HYPRE_BigInt[2];
+   cOffsets_ = new HYPRE_BigInt[2];
+   uOffsets_[0] = 0;
+   uOffsets_[1] = dimu;
+   cOffsets_[0] = 0;
+   cOffsets_[1] = dimc;
    y_partition[0] = 0;
    y_partition[1] = dimu;
    y_partition[2] = dimc;
    y_partition.PartialSum();
+  
+   {
+    HYPRE_BigInt dofOffsets[2];
+    HYPRE_BigInt complementarityOffsets[2];
+    for (int i = 0; i < 2; i++) {
+      dofOffsets[i] = uOffsets_[i] + cOffsets_[i];
+    }
+    complementarityOffsets[0] = 0;
+    complementarityOffsets[1] = 0;
+    Init(complementarityOffsets, dofOffsets);
+  }
 
-   Init(cOffsets, uOffsets);
    // dF / dx 0 x 0 matrix
    {
      int nentries = 0;
@@ -211,7 +220,8 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   auto residual_vector = residual(u);
   qblock.GetBlock(0).Set(1.0, residual_vector);
   auto residual_contribution = jTvp(u, l);
-  
+  qblock.GetBlock(0).Add(1.0, residual_contribution);
+
   auto constraint_eval = constraint(u);
   constraint_eval *= -1.0;
   qblock.GetBlock(1).Set(-1.0, constraint_eval);
@@ -274,8 +284,8 @@ EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
 {
   if (set_sizes)
   {
-     delete[] uOffsets;
-     delete[] cOffsets;
+     delete[] uOffsets_;
+     delete[] cOffsets_;
      delete dFdx;
      delete dFdy;
      delete dQdx;
