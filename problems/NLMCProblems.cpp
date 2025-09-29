@@ -219,7 +219,7 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   auto l = yblock.GetBlock(1);
   auto residual_vector = residual(u);
   qblock.GetBlock(0).Set(1.0, residual_vector);
-  auto residual_contribution = jTvp(u, l);
+  auto residual_contribution = constraintJacobainvp(u, l);
   qblock.GetBlock(0).Add(1.0, residual_contribution);
 
   auto constraint_eval = constraint(u);

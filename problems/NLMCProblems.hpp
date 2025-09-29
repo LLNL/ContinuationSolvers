@@ -80,7 +80,7 @@ public:
    EqualityConstrainedHomotopyProblem();
    void SetSizes(int dimu_, int dimc_);
    virtual mfem::Vector residual(const mfem::Vector & u) const = 0;
-   virtual mfem::Vector jTvp(const mfem::Vector &u, const mfem::Vector & l) const = 0;
+   virtual mfem::Vector constraintJacobainvp(const mfem::Vector &u, const mfem::Vector & l) const = 0;
    virtual mfem::HypreParMatrix * residualJacobian(const mfem::Vector & u) = 0; 
    virtual mfem::Vector constraint(const mfem::Vector & u) const = 0;
    virtual mfem::HypreParMatrix * constraintJacobian(const mfem::Vector & u) = 0;
