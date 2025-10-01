@@ -37,6 +37,7 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
 
 void HomotopySolver::Mult(const mfem::Vector & X0, mfem::Vector & Xf)
 {
+   MFEM_VERIFY(X0.Size() == dimx + dimy && Xf.Size() == dimx + dimy, "one or more input vectors of incorrect size");
    mfem::Vector X0copy(dimx + dimy); // non-const copy
    X0copy.Set(1.0, X0);
    mfem::Vector x0(X0copy, 0, dimx);
