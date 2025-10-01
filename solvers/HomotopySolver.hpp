@@ -38,7 +38,7 @@ protected:
 
    // filter
    mfem::Array<mfem::Vector *> filter;
-   
+   mfem::Array<int> krylov_its; 
    double gammaf = 1.e-4;
 
    const double delta0 = 1.0;
@@ -96,6 +96,7 @@ public:
       hout = hout_;
    };
    void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
+   mfem::Array<int> & GetKrylovIterations() {return krylov_its;};
    virtual ~HomotopySolver();
 };
 

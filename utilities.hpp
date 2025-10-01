@@ -32,7 +32,7 @@ class DirectSolver : public mfem::Solver
 private:
    mfem::Solver* solver;
 #ifdef MFEM_USE_STRUMPACK
-    mfem::STRUMPACKRowLocMatrix* Astrumpack;
+    mfem::STRUMPACKRowLocMatrix* Astrumpack = nullptr;
 #endif
 
 public:

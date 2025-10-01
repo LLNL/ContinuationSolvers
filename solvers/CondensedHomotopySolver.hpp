@@ -49,6 +49,7 @@ public:
 	void Mult(const mfem::BlockVector& , mfem::BlockVector&) const;
 	void SetUseAMGF(bool use_amgf_) { use_amgf = use_amgf_; };
 
+	mfem::Solver * GetReducedSolver() { return AreducedSolver; };
 	virtual ~CondensedHomotopySolver();
 };
 
