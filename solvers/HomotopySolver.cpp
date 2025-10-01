@@ -35,6 +35,18 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
 }
 
 
+void HomotopySolver::Mult(const mfem::Vector & X0, mfem::Vector & Xf)
+{
+   mfem::Vector X0copy(dimx + dimy); // non-const copy
+   X0copy.Set(1.0, X0);
+   mfem::Vector x0(X0copy, 0, dimx);
+   mfem::Vector y0(X0copy, dimx, dimy);
+   mfem::Vector xf(Xf, 0, dimx);
+   mfem::Vector yf(Xf, dimx, dimy);
+   Mult(x0, y0, xf, yf);
+}
+
+
 void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf)
 {
    mfem::BlockVector  Xk(block_offsets_xsy);  Xk = 0.0;

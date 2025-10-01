@@ -14,6 +14,7 @@ class GeneralNLMCProblem
 {
 protected:
    int dimx, dimy;
+   mfem::Array<int> xyoffsets;
    HYPRE_BigInt dimxglb, dimyglb;
    HYPRE_BigInt * dofOffsetsx;
    HYPRE_BigInt * dofOffsetsy;
@@ -35,6 +36,11 @@ public:
    HYPRE_BigInt * GetDofOffsetsy() const { return dofOffsetsy; }; 
    void setProblemLabel(int label_) { label = label_; };
    int getProblemLabel() { return label; };
+   mfem::BlockVector GetOptimizationVariable() {
+      mfem::BlockVector temp(xyoffsets);
+      temp = 0.0;
+      return temp;
+   };
    virtual ~GeneralNLMCProblem();
 };
 
@@ -90,6 +96,8 @@ public:
    mfem::Operator * DyF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dFdy; };
    mfem::Operator * DxQ(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dQdx; };
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
+   mfem::Vector GetDisplacement(mfem::Vector &Xf);
+   mfem::Vector GetLagrangeMultiplier(mfem::Vector &Xf);
    virtual ~EqualityConstrainedHomotopyProblem();    
 };
 

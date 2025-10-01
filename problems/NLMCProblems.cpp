@@ -22,7 +22,12 @@ void GeneralNLMCProblem::Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOff
   }
   dimx = dofOffsetsx[1] - dofOffsetsx[0];
   dimy = dofOffsetsy[1] - dofOffsetsy[0];
-  
+
+  xyoffsets.SetSize(3); 
+  xyoffsets[0] = 0;
+  xyoffsets[1] = dimx;
+  xyoffsets[2] = dimy;
+  xyoffsets.PartialSum(); 
   MPI_Allreduce(&dimx, &dimxglb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&dimy, &dimyglb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 }
@@ -140,6 +145,23 @@ EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem()
 {
    y_partition.SetSize(3);
 };
+
+mfem::Vector EqualityConstrainedHomotopyProblem::GetDisplacement(mfem::Vector &X)
+{
+   MFEM_VERIFY(X.Size() == dimx + dimy, "input vector of an invalid size");   
+   mfem::Vector u(X, 0, dimu);
+   return u;
+};
+
+mfem::Vector EqualityConstrainedHomotopyProblem::GetLagrangeMultiplier(mfem::Vector &X)
+{
+   MFEM_VERIFY(X.Size() == dimx + dimy, "input vector of an invalid size");   
+   mfem::Vector multiplier(X, dimu, dimc);
+   return multiplier;
+};
+
+
+
 
 void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets)
 {
