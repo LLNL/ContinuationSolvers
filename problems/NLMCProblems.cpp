@@ -134,7 +134,10 @@ mfem::Operator * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vec
 
 OptNLMCProblem::~OptNLMCProblem()
 {
-   delete dFdx;
+   if (dFdx)
+   {
+      delete dFdx;
+   }
    if (dQdx)
    {
       delete dQdx;
