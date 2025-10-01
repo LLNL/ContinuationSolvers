@@ -71,10 +71,10 @@ public:
 class EqualityConstrainedHomotopyProblem : public GeneralNLMCProblem
 {
 protected:
-   mfem::HypreParMatrix * dFdx;
-   mfem::HypreParMatrix * dFdy;
-   mfem::HypreParMatrix * dQdx;
-   mfem::HypreParMatrix * dQdy;
+   mfem::HypreParMatrix * dFdx = nullptr;
+   mfem::HypreParMatrix * dFdy = nullptr;
+   mfem::HypreParMatrix * dQdx = nullptr;
+   mfem::HypreParMatrix * dQdy = nullptr;
    int dimu;
    int dimc;
    int dimcglb;
