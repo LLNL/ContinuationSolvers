@@ -11,7 +11,7 @@ class CondensedHomotopySolver : public mfem::Solver
 protected:
 	mfem::HypreParMatrix* Areduced = nullptr;
 	mfem::Solver* AreducedSolver = nullptr;
-  AMGF * amgf = nullptr;	
+        AMGF * amgf = nullptr;	
 	mfem::HypreParMatrix * P = nullptr;
 	mfem::Array<int> blockOffsets;
 	mfem::Vector scale00;
@@ -49,6 +49,7 @@ public:
 	void Mult(const mfem::BlockVector& , mfem::BlockVector&) const;
 	void SetUseAMGF(bool use_amgf_) { use_amgf = use_amgf_; };
 
+	mfem::Solver * GetReducedSolver() { return AreducedSolver; };
 	virtual ~CondensedHomotopySolver();
 };
 
