@@ -141,33 +141,32 @@ EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem()
    y_partition.SetSize(3);
 };
 
-void EqualityConstrainedHomotopyProblem::SetSizes(int dimu_, int dimc_)
+void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets)
 {
    set_sizes = true;
-   dimu = dimu_;
-   dimc = dimc_;
+   dimu = uOffsets[1] - uOffsets[0];
+   dimc = cOffsets[1] - cOffsets[0];
    uOffsets_ = new HYPRE_BigInt[2];
    cOffsets_ = new HYPRE_BigInt[2];
-   uOffsets_[0] = 0;
-   uOffsets_[1] = dimu;
-   cOffsets_[0] = 0;
-   cOffsets_[1] = dimc;
+   for (int i = 0; i < 2; i++)
+   {
+      uOffsets_[i] = uOffsets[i];
+      cOffsets_[i] = cOffsets[i];
+   }
+   
    y_partition[0] = 0;
    y_partition[1] = dimu;
    y_partition[2] = dimc;
    y_partition.PartialSum();
-  
-   {
-    HYPRE_BigInt dofOffsets[2];
-    HYPRE_BigInt complementarityOffsets[2];
-    for (int i = 0; i < 2; i++) {
-      dofOffsets[i] = uOffsets_[i] + cOffsets_[i];
-    }
-    complementarityOffsets[0] = 0;
-    complementarityOffsets[1] = 0;
-    Init(complementarityOffsets, dofOffsets);
-  }
 
+   HYPRE_BigInt dofOffsets[2];
+   HYPRE_BigInt complementarityOffsets[2];
+   for (int i = 0; i < 2; i++) {
+      dofOffsets[i] = uOffsets_[i] + cOffsets_[i];
+      complementarityOffsets[i] = 0;
+   }
+   Init(complementarityOffsets, dofOffsets);
+   
    // dF / dx 0 x 0 matrix
    {
      int nentries = 0;

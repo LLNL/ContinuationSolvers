@@ -78,7 +78,7 @@ protected:
    bool set_sizes = false;
 public:
    EqualityConstrainedHomotopyProblem();
-   void SetSizes(int dimu_, int dimc_);
+   void SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets);
    virtual mfem::Vector residual(const mfem::Vector & u) const = 0;
    virtual mfem::Vector constraintJacobianTvp(const mfem::Vector &u, const mfem::Vector & l) const = 0;
    virtual mfem::HypreParMatrix * residualJacobian(const mfem::Vector & u) = 0; 
