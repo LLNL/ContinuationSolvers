@@ -35,6 +35,19 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
 }
 
 
+void HomotopySolver::Mult(const mfem::Vector & X0, mfem::Vector & Xf)
+{
+   MFEM_VERIFY(X0.Size() == dimx + dimy && Xf.Size() == dimx + dimy, "one or more input vectors of incorrect size");
+   mfem::Vector X0copy(dimx + dimy); // non-const copy
+   X0copy.Set(1.0, X0);
+   mfem::Vector x0(X0copy, 0, dimx);
+   mfem::Vector y0(X0copy, dimx, dimy);
+   mfem::Vector xf(Xf, 0, dimx);
+   mfem::Vector yf(Xf, dimx, dimy);
+   Mult(x0, y0, xf, yf);
+}
+
+
 void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf)
 {
    mfem::BlockVector  Xk(block_offsets_xsy);  Xk = 0.0;
@@ -590,7 +603,7 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGsx; JGsx = nullptr;
    }
-   dFdx = problem->DxF(X.GetBlock(0), X.GetBlock(2));
+   dFdx = dynamic_cast<mfem::HypreParMatrix*>(problem->DxF(X.GetBlock(0), X.GetBlock(2)));
    mfem::Vector diagtgx(dimx); diagtgx = 0.0;
    for (int i = 0; i < dimx; i++)
    {
@@ -613,7 +626,10 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGsy;
    }
-   JGsy = new mfem::HypreParMatrix(*(problem->DyF(X.GetBlock(0), X.GetBlock(2))));
+   mfem::HypreParMatrix * temp_mat;
+   temp_mat = dynamic_cast<mfem::HypreParMatrix *>(problem->DyF(X.GetBlock(0), X.GetBlock(2)));
+   // make a copy that we manipulate
+   JGsy = new mfem::HypreParMatrix(*temp_mat);
    one = -1.0;
    JGsy->ScaleRows(one);
    one = 1.0;
@@ -623,7 +639,8 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGyx;
    }
-   JGyx = new mfem::HypreParMatrix(*(problem->DxQ(X.GetBlock(0), X.GetBlock(2))));
+   temp_mat = dynamic_cast<mfem::HypreParMatrix *>(problem->DxQ(X.GetBlock(0), X.GetBlock(2)));
+   JGyx = new mfem::HypreParMatrix(*temp_mat);
 
 
    // d / dy (G_t)_3 = dQ / dy + (t * \gamma_y)^p
@@ -631,7 +648,7 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    {
       delete JGyy;   
    }
-   dQdy = problem->DyQ(X.GetBlock(0), X.GetBlock(2));
+   dQdy = dynamic_cast<mfem::HypreParMatrix*>(problem->DyQ(X.GetBlock(0), X.GetBlock(2)));
    mfem::Vector diagtgy(dimy); diagtgy = 0.0;
    for (int i = 0; i < dimy; i++)
    {
@@ -710,15 +727,6 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
       directSolver.Mult(rk, dXN);
       dXN *= -1.0;
       delete Jk;
-   }
-   
-   mfem::Vector errk(rk.Size()); errk = 0.0;
-   JkOp.Mult(dXN, errk);
-   errk.Add(1.0, rk);
-   double lin_err = mfem::GlobalLpNorm(2, errk.Norml2(), MPI_COMM_WORLD);
-   if (iAmRoot)
-   {
-      *hout << "||Jk * dXN + rk||_2 = " << lin_err << std::endl;
    }
 }
 

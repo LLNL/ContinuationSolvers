@@ -73,6 +73,7 @@ protected:
 public:
    HomotopySolver(GeneralNLMCProblem * problem_);
    void Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf);
+   void Mult(const mfem::Vector & X0, mfem::Vector & Xf);
    bool GetConverged() const {  return converged;  };
    double E(const mfem::BlockVector & X, int & Eeval_err);
    void G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err);

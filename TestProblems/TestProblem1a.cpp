@@ -37,23 +37,23 @@ using namespace mfem;
  *  where x = z (Lagrange multiplier)
  *        y = u primal variable)
  */
-class Ex1aProblem : public ParOptProblem
+class Ex1aProblem : public OptProblem
 {
 protected:
    Vector ul;
-   HypreParMatrix * dgdu;
-   HypreParMatrix * d2Edu2;
+   HypreParMatrix * dgdu = nullptr;
+   HypreParMatrix * d2Edu2 = nullptr;
 public:
    Ex1aProblem(int n);
    double E(const Vector & u, int & eval_err);
 
    void DdE(const Vector & u, Vector & gradE);
 
-   HypreParMatrix * DddE(const Vector & u);
+   Operator * DddE(const Vector & u);
 
    void g(const Vector & u, Vector & gu, int & eval_err);
 
-   HypreParMatrix * Ddg(const Vector &);
+   Operator * Ddg(const Vector &);
    void Displayul(int myid);
 
    virtual ~Ex1aProblem();
@@ -137,8 +137,7 @@ int main(int argc, char *argv[])
 
 
 // Ex1Problem
-Ex1aProblem::Ex1aProblem(int n) : ParOptProblem(), 
-	dgdu(nullptr), d2Edu2(nullptr)
+Ex1aProblem::Ex1aProblem(int n) : OptProblem() 
 {
   MFEM_VERIFY(n >= 1, "Ex1aProblem::Ex1aProblem -- problem must have nontrivial size");
 	
@@ -193,7 +192,7 @@ void Ex1aProblem::DdE(const Vector & u, Vector & gradE)
   gradE.Set(1.0, u);
 }
 
-HypreParMatrix * Ex1aProblem::DddE(const Vector & u)
+Operator * Ex1aProblem::DddE(const Vector & u)
 {
    return d2Edu2;
 }
@@ -205,7 +204,7 @@ void Ex1aProblem::g(const Vector & u, Vector & gu, int & eval_err)
    gu.Add(-1.0, ul);
 }
 
-HypreParMatrix * Ex1aProblem::Ddg(const Vector & u)
+Operator * Ex1aProblem::Ddg(const Vector & u)
 {
    return dgdu;
 }

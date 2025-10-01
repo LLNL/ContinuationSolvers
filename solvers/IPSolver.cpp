@@ -5,7 +5,7 @@
 #include <mfem/linalg/strumpack.hpp>
 #endif
 
-ParInteriorPointSolver::ParInteriorPointSolver(ParGeneralOptProblem * problem_) 
+InteriorPointSolver::InteriorPointSolver(GeneralOptProblem * problem_) 
                      : problem(problem_), 
                        block_offsetsumlz(5), block_offsetsuml(4), block_offsetsx(3),
                        Huu(nullptr), Hum(nullptr), Hmu(nullptr), 
@@ -88,7 +88,7 @@ ParInteriorPointSolver::ParInteriorPointSolver(ParGeneralOptProblem * problem_)
    iAmRoot = MyRank == 0 ? true : false;
 }
 
-double ParInteriorPointSolver::MaxStepSize(mfem::Vector &x, mfem::Vector &xl, mfem::Vector &xhat, double tau)
+double InteriorPointSolver::MaxStepSize(mfem::Vector &x, mfem::Vector &xl, mfem::Vector &xhat, double tau)
 {
    double alphaMaxloc = 1.0;
    double alphaTmp;
@@ -109,23 +109,23 @@ double ParInteriorPointSolver::MaxStepSize(mfem::Vector &x, mfem::Vector &xl, mf
    return alphaMaxglb;
 }
 
-double ParInteriorPointSolver::MaxStepSize(mfem::Vector &x, mfem::Vector &xhat, double tau)
+double InteriorPointSolver::MaxStepSize(mfem::Vector &x, mfem::Vector &xhat, double tau)
 {
    mfem::Vector zero(x.Size()); zero = 0.0;
    return MaxStepSize(x, zero, xhat, tau);
 }
 
 
-void ParInteriorPointSolver::Mult(const mfem::Vector &x0, mfem::Vector &xf)
+void InteriorPointSolver::Mult(const mfem::Vector &x0, mfem::Vector &xf)
 {
    mfem::BlockVector x0block(block_offsetsx); x0block = 0.0;
    x0block.GetBlock(0).Set(1.0, x0);
    if (!(initializedm))
    {
-       ParOptProblem * OptProblem = dynamic_cast<ParOptProblem *>(problem);
+      OptProblem * optproblem = dynamic_cast<OptProblem *>(problem);
 //    if (dimM > 0)
        {
-          if (OptProblem == nullptr)
+          if (!optproblem)
           {
               // fixed initialization     
               x0block.GetBlock(1) = 1.e2;
@@ -160,7 +160,7 @@ void ParInteriorPointSolver::Mult(const mfem::Vector &x0, mfem::Vector &xf)
 }
 
 
-void ParInteriorPointSolver::Mult(const mfem::BlockVector &x0, mfem::BlockVector &xf)
+void InteriorPointSolver::Mult(const mfem::BlockVector &x0, mfem::BlockVector &xf)
 {
    converged = false;
    
@@ -351,12 +351,12 @@ void ParInteriorPointSolver::Mult(const mfem::BlockVector &x0, mfem::BlockVector
    xf.GetBlock(1).Set(1.0, xk.GetBlock(1));
 }
 
-void ParInteriorPointSolver::FormIPNewtonMat(mfem::BlockVector & x, mfem::Vector & /*l*/, mfem::Vector &zl, mfem::BlockOperator &Ak)
+void InteriorPointSolver::FormIPNewtonMat(mfem::BlockVector & x, mfem::Vector & /*l*/, mfem::Vector &zl, mfem::BlockOperator &Ak)
 {
-   Huu = problem->Duuf(x); 
-   Hum = problem->Dumf(x);
-   Hmu = problem->Dmuf(x);
-   Hmm = problem->Dmmf(x);
+   Huu = dynamic_cast<mfem::HypreParMatrix *>(problem->Duuf(x)); 
+   Hum = dynamic_cast<mfem::HypreParMatrix *>(problem->Dumf(x));
+   Hmu = dynamic_cast<mfem::HypreParMatrix *>(problem->Dmuf(x));
+   Hmm = dynamic_cast<mfem::HypreParMatrix *>(problem->Dmmf(x));
 
    mfem::Vector DiagLogBar(dimM); DiagLogBar = 0.0;
    for (int ii = 0; ii < dimM; ii++)
@@ -376,8 +376,8 @@ void ParInteriorPointSolver::FormIPNewtonMat(mfem::BlockVector & x, mfem::Vector
       Wmm = D;
    }
 
-   Ju = problem->Duc(x); JuT = Ju->Transpose();
-   Jm = problem->Dmc(x); JmT = Jm->Transpose();
+   Ju = dynamic_cast<mfem::HypreParMatrix *>(problem->Duc(x)); JuT = Ju->Transpose();
+   Jm = dynamic_cast<mfem::HypreParMatrix *>(problem->Dmc(x)); JmT = Jm->Transpose();
    //         IP-Newton system matrix
    //    Ak = [[H_(u,u)  H_(u,m)   J_u^T]
    //          [H_(m,u)  W_(m,m)   J_m^T]
@@ -392,7 +392,7 @@ void ParInteriorPointSolver::FormIPNewtonMat(mfem::BlockVector & x, mfem::Vector
 
 // perturbed KKT system solve
 // determine the search direction
-void ParInteriorPointSolver::IPNewtonSolve(mfem::BlockVector &x, mfem::Vector &l, mfem::Vector &zl, mfem::Vector &zlhat, mfem::BlockVector &Xhat, double mu)
+void InteriorPointSolver::IPNewtonSolve(mfem::BlockVector &x, mfem::Vector &l, mfem::Vector &zl, mfem::Vector &zlhat, mfem::BlockVector &Xhat, double mu)
 {
    int nKrylovIts = -1;
    // solve A x = b, where A is the IP-Newton matrix
@@ -470,7 +470,7 @@ void ParInteriorPointSolver::IPNewtonSolve(mfem::BlockVector &x, mfem::Vector &l
 
 // here Xhat, X will be mfem::BlockVectors w.r.t. the 4 partitioning X = (u, m, l, zl)
 
-void ParInteriorPointSolver::lineSearch(mfem::BlockVector& X0, mfem::BlockVector& Xhat, double mu)
+void InteriorPointSolver::lineSearch(mfem::BlockVector& X0, mfem::BlockVector& Xhat, double mu)
 {
    //double tau  = max(tauMin, 1.0 - mu);
    double tau = tauMin;
@@ -619,7 +619,7 @@ void ParInteriorPointSolver::lineSearch(mfem::BlockVector& X0, mfem::BlockVector
 }
 
 
-void ParInteriorPointSolver::projectZ(const mfem::Vector &x, mfem::Vector &z, double mu)
+void InteriorPointSolver::projectZ(const mfem::Vector &x, mfem::Vector &z, double mu)
 {
    double zi;
    double mudivmml;
@@ -631,7 +631,7 @@ void ParInteriorPointSolver::projectZ(const mfem::Vector &x, mfem::Vector &z, do
    }
 }
 
-void ParInteriorPointSolver::filterCheck(double th, double ph)
+void InteriorPointSolver::filterCheck(double th, double ph)
 {
    inFilterRegion = false;
    if(th > thetaMax)
@@ -651,7 +651,7 @@ void ParInteriorPointSolver::filterCheck(double th, double ph)
    }
 }
 
-double ParInteriorPointSolver::E(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, double mu, bool printEeval)
+double InteriorPointSolver::E(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, double mu, bool printEeval)
 {
    double E1, E2, E3;
    double sc, sd;
@@ -686,26 +686,26 @@ double ParInteriorPointSolver::E(const mfem::BlockVector &x, const mfem::Vector 
    return std::max(std::max(E1 / sd, E2), E3 / sc);
 }
 
-double ParInteriorPointSolver::E(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, bool printEeval)
+double InteriorPointSolver::E(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, bool printEeval)
 {
   return E(x, l, zl, 0.0, printEeval);
 }
 
-double ParInteriorPointSolver::theta(const mfem::BlockVector &x, int & eval_err)
+double InteriorPointSolver::theta(const mfem::BlockVector &x, int & eval_err)
 {
   mfem::Vector cx(dimC); cx = 0.0;
   problem->c(x, cx, eval_err);
   return mfem::GlobalLpNorm(2, cx.Norml2(), MPI_COMM_WORLD);
 }
 
-double ParInteriorPointSolver::theta(const mfem::BlockVector &x)
+double InteriorPointSolver::theta(const mfem::BlockVector &x)
 {
   int eval_err; // throw away
   return theta(x, eval_err);
 }
 
 // log-barrier objective
-double ParInteriorPointSolver::phi(const mfem::BlockVector &x, double mu, int & eval_err)
+double InteriorPointSolver::phi(const mfem::BlockVector &x, double mu, int & eval_err)
 {
    double fx = problem->CalcObjective(x, eval_err); 
    double logBarrierLoc = 0.0;
@@ -718,14 +718,14 @@ double ParInteriorPointSolver::phi(const mfem::BlockVector &x, double mu, int & 
    return fx - mu * logBarrierGlb;
 }
 
-double ParInteriorPointSolver::phi(const mfem::BlockVector &x, double mu)
+double InteriorPointSolver::phi(const mfem::BlockVector &x, double mu)
 {
   int eval_err; // throw away
   return phi(x, mu, eval_err);
 }
 
 // gradient of log-barrier objective with respect to x = (u, m)
-void ParInteriorPointSolver::Dxphi(const mfem::BlockVector &x, double mu, mfem::BlockVector &y)
+void InteriorPointSolver::Dxphi(const mfem::BlockVector &x, double mu, mfem::BlockVector &y)
 {
    problem->CalcObjectiveGrad(x, y);
    
@@ -737,126 +737,129 @@ void ParInteriorPointSolver::Dxphi(const mfem::BlockVector &x, double mu, mfem::
 
 // Lagrangian function evaluation
 // L(x, l, zl) = f(x) + l^T c(x) - zl^T m
-double ParInteriorPointSolver::L(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl)
+double InteriorPointSolver::L(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl)
 {
    double fx = problem->CalcObjective(x);
    mfem::Vector cx(dimC); problem->c(x, cx);
    return (fx + InnerProduct(MPI_COMM_WORLD, cx, l) - InnerProduct(MPI_COMM_WORLD, x.GetBlock(1), zl));
 }
 
-void ParInteriorPointSolver::DxL(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, mfem::BlockVector &y)
+void InteriorPointSolver::DxL(const mfem::BlockVector &x, const mfem::Vector &l, const mfem::Vector &zl, mfem::BlockVector &y)
 {
    // evaluate the gradient of the objective with respect to the primal variables x = (u, m)
    mfem::BlockVector gradxf(block_offsetsx); gradxf = 0.0;
    problem->CalcObjectiveGrad(x, gradxf);
    
    mfem::HypreParMatrix *Jacu, *Jacm, *JacuT, *JacmT;
-   Jacu = problem->Duc(x); 
-   Jacm = problem->Dmc(x);
-   JacuT = Jacu->Transpose();
-   JacmT = Jacm->Transpose();
+   Jacu = dynamic_cast<mfem::HypreParMatrix*>(problem->Duc(x)); 
+   Jacm = dynamic_cast<mfem::HypreParMatrix*>(problem->Dmc(x));
+   Jacu->MultTranspose(l, y.GetBlock(0));
+   Jacm->MultTranspose(l, y.GetBlock(1));
    
-   JacuT->Mult(l, y.GetBlock(0));
-   JacmT->Mult(l, y.GetBlock(1));
-   
-   delete JacuT;
-   delete JacmT;
+   //JacuT = Jacu->Transpose();
+   //JacmT = Jacm->Transpose();
+   //
+   //JacuT->Mult(l, y.GetBlock(0));
+   //JacmT->Mult(l, y.GetBlock(1));
+   //
+   //delete JacuT;
+   //delete JacmT;
    
    y.Add(1.0, gradxf);
    (y.GetBlock(1)).Add(-1.0, zl);
 }
 
-bool ParInteriorPointSolver::GetConverged() const
+bool InteriorPointSolver::GetConverged() const
 {
    return converged;
 }
 
-void ParInteriorPointSolver::SetTol(double Tol)
+void InteriorPointSolver::SetTol(double Tol)
 {
    OptTol = Tol;
 }
 
-void ParInteriorPointSolver::SetMaxIter(int max_it)
+void InteriorPointSolver::SetMaxIter(int max_it)
 {
    max_iter = max_it;
 }
 
-void ParInteriorPointSolver::SetBarrierParameter(double mu_0)
+void InteriorPointSolver::SetBarrierParameter(double mu_0)
 {
    mu_k = mu_0;
 }
 
-void ParInteriorPointSolver::SaveLogBarrierHessianIterates(bool save)
+void InteriorPointSolver::SaveLogBarrierHessianIterates(bool save)
 {
    MFEM_ASSERT(MyRank == 0 || save == false, "currently can only save logbarrier hessian in serial codes");
    saveLogBarrierIterates = save;
 }
 
-void ParInteriorPointSolver::SetLinearSolveTol(double Tol)
+void InteriorPointSolver::SetLinearSolveTol(double Tol)
 {
   linSolveTol = Tol;
 }
 
-void ParInteriorPointSolver::GetLagrangeMultiplier(mfem::Vector & y)
+void InteriorPointSolver::GetLagrangeMultiplier(mfem::Vector & y)
 {
   y.SetSize(dimM); y = 0.;
   y.Set(1.0, zlk);
 }
 
-void ParInteriorPointSolver::InitializeM(mfem::Vector & m0)
+void InteriorPointSolver::InitializeM(mfem::Vector & m0)
 {
   minit.Set(1.0, m0);
   initializedm = true;
 }
 
-void ParInteriorPointSolver::InitializeL(mfem::Vector & l0)
+void InteriorPointSolver::InitializeL(mfem::Vector & l0)
 {
   linit.Set(1.0, l0);
   initializedl = true;
 }
 
-void ParInteriorPointSolver::InitializeZl(mfem::Vector & z0)
+void InteriorPointSolver::InitializeZl(mfem::Vector & z0)
 {
   zlinit.Set(1.0, z0);
   initializedzl = true;
 }
 
-void ParInteriorPointSolver::GetLogBarrierU(mfem::Vector & uLogBar)
+void InteriorPointSolver::GetLogBarrierU(mfem::Vector & uLogBar)
 {
   uLogBar.Set(1.0, uLogBarrierSol);
 }
 
-void ParInteriorPointSolver::GetLogBarrierM(mfem::Vector & mLogBar)
+void InteriorPointSolver::GetLogBarrierM(mfem::Vector & mLogBar)
 {
   mLogBar.Set(1.0, mLogBarrierSol);
 }
 
-void ParInteriorPointSolver::GetLogBarrierL(mfem::Vector & lLogBar)
+void InteriorPointSolver::GetLogBarrierL(mfem::Vector & lLogBar)
 {
   lLogBar.Set(1.0, lLogBarrierSol);
 }
 
-void ParInteriorPointSolver::GetLogBarrierZl(mfem::Vector & zlLogBar)
+void InteriorPointSolver::GetLogBarrierZl(mfem::Vector & zlLogBar)
 {
   zlLogBar.Set(1.0, zlLogBarrierSol);
 }
 
-void ParInteriorPointSolver::GetNumIterations(int & its)
+void InteriorPointSolver::GetNumIterations(int & its)
 {
   its = jOpt;
 }
 
-void ParInteriorPointSolver::GetLogBarrierMu(double & mu)
+void InteriorPointSolver::GetLogBarrierMu(double & mu)
 {
   mu = muLogBarrierSol;
 }
 
-void ParInteriorPointSolver::SetLogBarrierMu(double mu)
+void InteriorPointSolver::SetLogBarrierMu(double mu)
 {
   muLogBarrierSol = mu;
 }
 
-ParInteriorPointSolver::~ParInteriorPointSolver() 
+InteriorPointSolver::~InteriorPointSolver() 
 {
    F1.DeleteAll();
    F2.DeleteAll();
