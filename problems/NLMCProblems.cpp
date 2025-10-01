@@ -244,7 +244,6 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   qblock.GetBlock(0).Add(1.0, residual_contribution);
 
   auto constraint_eval = constraint(u);
-  constraint_eval *= -1.0;
   qblock.GetBlock(1).Set(-1.0, constraint_eval);
 
   qeval.Set(1.0, qblock);
