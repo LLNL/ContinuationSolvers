@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
    Mpi::Init();
    int myid = Mpi::WorldRank();
    bool iAmRoot = (myid == 0);
-   Hypre::Init();   
+   //Hypre::Init();   
    OptionsParser args(argc, argv);
 
 
@@ -114,22 +114,15 @@ int main(int argc, char *argv[])
    HomotopySolver solver(&problem);
    solver.SetTol(nmcpSolverTol);
    solver.SetMaxIter(nmcpSolverMaxIter);
-   CondensedHomotopySolver* condensed_solver;
-   mfem::IterativeSolver* iterative_solver;
-   if (condensed_solve)
-   {
-      condensed_solver = new CondensedHomotopySolver();
-      if (use_AMGF)
-      {
-         iterative_solver = new CGSolver(MPI_COMM_WORLD);
-	 iterative_solver->SetPrintLevel(1);
-	 iterative_solver->SetMaxIter(1000);
-	 iterative_solver->SetRelTol(1.e-12);
-         condensed_solver->SetPreconditioner(*iterative_solver);
-      }
-      condensed_solver->SetUseAMGF(use_AMGF);
-      solver.SetLinearSolver(*condensed_solver);
-   }
+   mfem::CGSolver iterative_solver(MPI_COMM_WORLD);
+   iterative_solver.SetPrintLevel(1);
+   iterative_solver.SetMaxIter(1000);
+   iterative_solver.SetRelTol(1.e-12);
+
+   CondensedHomotopySolver condensed_solver;
+   condensed_solver.SetPreconditioner(iterative_solver);
+   condensed_solver.SetUseAMGF(true);
+   solver.SetLinearSolver(condensed_solver);
    solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
    MFEM_VERIFY(converged, "solver did not converge\n");
@@ -138,14 +131,6 @@ int main(int argc, char *argv[])
       cout << "xf(" << i << ") = " << xf(i) << ", yf(" << i << ") = " << yf(i) << ", (rank = " << myid << ")\n";
    }
    optproblem.Displayul(myid);
-   if (use_AMGF)
-   {
-      delete iterative_solver;
-   }
-   if (condensed_solve)
-   {
-      delete condensed_solver;
-   }
    Mpi::Finalize();
    return 0;
 }

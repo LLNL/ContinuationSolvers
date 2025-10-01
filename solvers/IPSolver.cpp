@@ -445,31 +445,10 @@ void ParInteriorPointSolver::IPNewtonSolve(mfem::BlockVector &x, mfem::Vector &l
       
       mfem::HypreParMatrix * Ah = HypreParMatrixFromBlocks(ABlockMatrix);   
       /* direct solve of the 3x3 IP-Newton linear system */
-#ifdef MFEM_USE_STRUMPACK
-      linSolver = new mfem::STRUMPACKSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<mfem::STRUMPACKSolver *>(linSolver);
-      linsolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
-      mfem::STRUMPACKRowLocMatrix *Akstrumpack = new mfem::STRUMPACKRowLocMatrix(*Ah);
-      linsolver->SetOperator(*Akstrumpack);
-#elif defined(MFEM_USE_MUMPS)
-      linSolver = new mfem::MUMPSSolver(MPI_COMM_WORLD);
-      auto linsolver = dynamic_cast<mfem::MUMPSSolver *>(linSolver);
-      linsolver->SetPrintLevel(0);
-      linsolver->SetMatrixSymType(mfem::MUMPSSolver::MatType::UNSYMMETRIC);
-      linsolver->SetOperator(*Ah);
-#elif defined(MFEM_USE_MKL_CPARDISO)
-      linSolver = new mfem::CPardisoSolver(MPI_COMM_WORLD);
-      linSolver->SetOperator(*Ah);
-#else
-      MFEM_ABORT("default (direct solver) will not work unless compiled mfem is with MUMPS, MKL_CPARDISO, or STRUMPACK");
-#endif
+      linSolver = new DirectSolver(*Ah);
       linSolver->Mult(b, Xhat);
       delete Ah;
-      delete linSolver;
-      linSolver = nullptr;
-#ifdef MFEM_USE_STRUMPACK
-      delete Akstrumpack;
-#endif
+      delete linSolver; linSolver = nullptr;
    }
 
    /* backsolve to determine zlhat */

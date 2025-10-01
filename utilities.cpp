@@ -239,7 +239,7 @@ mfem::HypreParMatrix * NonZeroColMap(const mfem::HypreParMatrix& A)
 
 DirectSolver::DirectSolver()
    : mfem::Solver(), solver(nullptr)
-{ }
+{  }
 
 DirectSolver::DirectSolver(const mfem::Operator& op)
    : DirectSolver()
@@ -249,9 +249,15 @@ DirectSolver::DirectSolver(const mfem::Operator& op)
 
 DirectSolver::~DirectSolver()
 {
-   delete solver;
-#ifdef MFEM_USE_STRUMPACK
-   delete Astrumpack;
+   if (solver)
+   {
+      delete solver;
+   }
+#if defined(MFEM_USE_STRUMPACK)
+   if (Astrumpack)
+   {
+      delete Astrumpack;
+   }
 #endif
 }
 
@@ -266,11 +272,17 @@ void DirectSolver::SetOperator(const mfem::Operator& op)
    if (solver)
    {
       delete solver;
+      solver = nullptr;
    }
-#ifdef MFEM_USE_STRUMPACK
+#if defined(MFEM_USE_STRUMPACK)
    auto directSolver = new mfem::STRUMPACKSolver(op_ptr->GetComm());
    directSolver->SetKrylovSolver(strumpack::KrylovSolver::DIRECT);
    directSolver->SetReorderingStrategy(strumpack::ReorderingStrategy::METIS);
+   if (Astrumpack)
+   {
+      delete Astrumpack;
+      Astrumpack = nullptr;
+   }
    Astrumpack = new mfem::STRUMPACKRowLocMatrix(*op_ptr);
    directSolver->SetOperator(*Astrumpack);
 #elif defined(MFEM_USE_MUMPS)

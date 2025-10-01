@@ -6,7 +6,7 @@
 
 HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),
 	dFdx(nullptr), dFdy(nullptr), dQdx(nullptr), dQdy(nullptr), JGxx(nullptr), JGxs(nullptr), JGsx(nullptr),
-   JGss(nullptr), JGsy(nullptr), JGyx(nullptr), JGyy(nullptr), linSolver(nullptr), filter(0)
+   JGss(nullptr), JGsy(nullptr), JGyx(nullptr), JGyy(nullptr), linSolver(nullptr), filter(0), krylov_its(0)
 {
    dimx = problem->GetDimx();
    dimy = problem->GetDimy();
@@ -657,6 +657,31 @@ void HomotopySolver::NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVe
       linSolver->SetOperator(JkOp);
       linSolver->Mult(rk, dXN);
       dXN *= -1.0;
+      mfem::IterativeSolver * itSolver = dynamic_cast<mfem::IterativeSolver *>(linSolver);
+      if (!itSolver)
+      {
+         CondensedHomotopySolver * condensedhomotopysolver = dynamic_cast<CondensedHomotopySolver*>(linSolver);
+         if (condensedhomotopysolver)
+	 {
+	    itSolver = dynamic_cast<mfem::IterativeSolver *>(condensedhomotopysolver->GetReducedSolver()); 
+	 }
+      }
+
+      if (itSolver)
+      {
+	 if (itSolver->GetConverged())
+	 {
+	    krylov_its.Append(itSolver->GetNumIterations());
+	 }
+	 else
+	 {
+	    krylov_its.Append(-1);
+	 }
+      }
+      else
+      {
+         krylov_its.Append(-1);
+      }
    }
    else
    {
