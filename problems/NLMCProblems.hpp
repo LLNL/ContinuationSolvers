@@ -101,8 +101,8 @@ public:
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y) override;
    mfem::Vector GetDisplacement(mfem::Vector &Xf);
    mfem::Vector GetLagrangeMultiplier(mfem::Vector &Xf);
-   double GetDisplacementDim() {  return dimu; };
-   double GetMultiplierDim() { return dimc; };
+   int GetDisplacementDim() {  return dimu; };
+   int GetMultiplierDim() { return dimc; };
    void SetAdjointSolver(mfem::Solver * adjoint_solver_);
    void SetSymmetricAdjoint(bool symmetric) { adjoint_is_symmetric = symmetric; };
    void AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 
