@@ -112,17 +112,17 @@ int main(int argc, char *argv[])
    Vector xf(dimx); xf = 0.0;
    Vector yf(dimy); yf = 0.0;
    HomotopySolver solver(&problem);
-   solver.SetTol(nmcpSolverTol);
-   solver.SetMaxIter(nmcpSolverMaxIter);
-   mfem::CGSolver iterative_solver(MPI_COMM_WORLD);
-   iterative_solver.SetPrintLevel(1);
-   iterative_solver.SetMaxIter(1000);
-   iterative_solver.SetRelTol(1.e-12);
+   //solver.SetTol(nmcpSolverTol);
+   //solver.SetMaxIter(nmcpSolverMaxIter);
+   //mfem::CGSolver iterative_solver(MPI_COMM_WORLD);
+   //iterative_solver.SetPrintLevel(1);
+   //iterative_solver.SetMaxIter(1000);
+   //iterative_solver.SetRelTol(1.e-12);
 
-   CondensedHomotopySolver condensed_solver;
-   condensed_solver.SetPreconditioner(iterative_solver);
-   condensed_solver.SetUseAMGF(true);
-   solver.SetLinearSolver(condensed_solver);
+   //CondensedHomotopySolver condensed_solver;
+   //condensed_solver.SetPreconditioner(iterative_solver);
+   //condensed_solver.SetUseAMGF(true);
+   //solver.SetLinearSolver(condensed_solver);
    solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
    MFEM_VERIFY(converged, "solver did not converge\n");

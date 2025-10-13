@@ -81,6 +81,9 @@ protected:
    mfem::Array<int> y_partition;
    HYPRE_BigInt * uOffsets_ = nullptr;
    HYPRE_BigInt * cOffsets_ = nullptr;
+   mfem::Solver * adjoint_solver = nullptr;
+   bool own_adjoint_solver = true;
+   bool adjoint_is_symmetric = false;
    bool set_sizes = false;
 public:
    EqualityConstrainedHomotopyProblem();
@@ -90,14 +93,18 @@ public:
    virtual mfem::HypreParMatrix * residualJacobian(const mfem::Vector & u) = 0; 
    virtual mfem::Vector constraint(const mfem::Vector & u) const = 0;
    virtual mfem::HypreParMatrix * constraintJacobian(const mfem::Vector & u) = 0;
-   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
-   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const;
-   mfem::Operator * DxF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dFdx; };
-   mfem::Operator * DyF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dFdy; };
-   mfem::Operator * DxQ(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) { return dQdx; };
-   mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
+   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const override;
+   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const override;
+   mfem::Operator * DxF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dFdx; };
+   mfem::Operator * DyF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dFdy; };
+   mfem::Operator * DxQ(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dQdx; };
+   mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y) override;
    mfem::Vector GetDisplacement(mfem::Vector &Xf);
    mfem::Vector GetLagrangeMultiplier(mfem::Vector &Xf);
+   void SetAdjointSolver(mfem::Solver * adjoint_solver_);
+   void SetSymmetricAdjoint(bool symmetric) { adjoint_is_symmetric = symmetric; };
+   void AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 
+      mfem::Vector & adjoint);
    virtual ~EqualityConstrainedHomotopyProblem();    
 };
 

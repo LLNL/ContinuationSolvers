@@ -147,6 +147,7 @@ OptNLMCProblem::~OptNLMCProblem()
 EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem()
 {
    y_partition.SetSize(3);
+   adjoint_solver = new DirectSolver();
 };
 
 mfem::Vector EqualityConstrainedHomotopyProblem::GetDisplacement(mfem::Vector &X)
@@ -162,8 +163,6 @@ mfem::Vector EqualityConstrainedHomotopyProblem::GetLagrangeMultiplier(mfem::Vec
    mfem::Vector multiplier(X, dimu, dimc);
    return multiplier;
 };
-
-
 
 
 void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets)
@@ -269,6 +268,9 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 };
 
 
+
+
+
 // dQdy = [ dr/du   dc/du^T]
 //        [-dc/du   0  ]
 mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*/, const mfem::Vector& y)
@@ -303,6 +305,43 @@ mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*
   return dQdy;
 };
 
+void EqualityConstrainedHomotopyProblem::SetAdjointSolver(mfem::Solver * adjoint_solver_)
+{
+   own_adjoint_solver = false;
+   adjoint_solver = adjoint_solver_;
+};
+
+
+// evaluation_u_point: point at which adjoint system will be evaluated
+// adjoint_load: rhs forcing term of the adjoint equation, determined by 
+//               design objective, etc.
+// adjoint: solution of the adjoint equation
+void EqualityConstrainedHomotopyProblem::AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 
+   mfem::Vector & adjoint)
+{
+   MFEM_VERIFY(adjoint_load.Size() == dimu + dimc, "Adjoint load not of the correct size");
+   MFEM_VERIFY(adjoint.Size() == dimu + dimc, "Adjoint solution vector not of the correct size");
+   mfem::BlockVector evaluation_y_point(y_partition); evaluation_y_point = 0.0;
+   evaluation_y_point.GetBlock(0).Set(1.0, evaluation_u_point);
+   mfem::Vector evaluation_x_point(dimx); evaluation_x_point = 0.0;
+   auto A = DyQ(evaluation_x_point, evaluation_y_point);
+   if (adjoint_is_symmetric)
+   {
+      adjoint_solver->SetOperator(*A);
+      adjoint_solver->Mult(adjoint_load, adjoint);
+   }
+   else
+   {
+      auto Ahypre = dynamic_cast<mfem::HypreParMatrix*>(A);
+      auto Aadjoint = Ahypre->Transpose();
+      
+      adjoint_solver->SetOperator(*Aadjoint);
+      adjoint_solver->Mult(adjoint_load, adjoint);
+      delete Aadjoint;
+   }
+};
+
+
 EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
 {
   if (set_sizes)
@@ -312,10 +351,14 @@ EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
      delete dFdx;
      delete dFdy;
      delete dQdx;
-  };
+  }
   if (dQdy)
   {
      delete dQdy;
-  };
+  }
+  if (own_adjoint_solver)
+  {
+     delete adjoint_solver;
+  }
 };
 
