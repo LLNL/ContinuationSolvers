@@ -49,8 +49,8 @@ protected:
    Array<int> y_partition; // y partitioned into [u, l]
 public:
    Ex4Problem(int n);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err) const;
+   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, const bool new_pt) const;
+   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, const bool new_pt) const;
    HypreParMatrix * DxF(const Vector &x, const Vector &y);
    HypreParMatrix * DyF(const Vector &x, const Vector &y);
    HypreParMatrix * DxQ(const Vector &x, const Vector &y);
@@ -270,8 +270,7 @@ Ex4Problem::Ex4Problem(int n) : GeneralNLMCProblem()
 }
 
 
-// TO-DO: complete me!
-void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err) const
+void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, const bool new_pt) const
 {
    qeval = 0.0;
    dQdy->Mult(y, qeval);
@@ -282,7 +281,7 @@ void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeva
    Qeval_err = 0;
 }
 
-void Ex4Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err) const
+void Ex4Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, const bool new_pt) const
 {
    feval = 0.0;
    Feval_err = 0;

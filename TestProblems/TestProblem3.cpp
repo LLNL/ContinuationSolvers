@@ -47,8 +47,8 @@ protected:
    HYPRE_BigInt * dofOffsets;
 public:
    Ex3Problem(int n);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err) const;
+   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, const bool new_pt) const;
+   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, const bool new_pt) const;
    HypreParMatrix * DxF(const Vector &x, const Vector &y);
    HypreParMatrix * DyF(const Vector &x, const Vector &y);
    HypreParMatrix * DxQ(const Vector &x, const Vector &y);
@@ -168,7 +168,7 @@ Ex3Problem::Ex3Problem(int n) : GeneralNLMCProblem(),
   uu.Randomize(myid); uu += 2.0;
 }
 
-void Ex3Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_err) const
+void Ex3Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_err, const bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx, "Ex3Problem::F -- Inconsistent dimensions");
   for (int i = 0; i < dimx; i++)
@@ -179,7 +179,7 @@ void Ex3Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_e
 }
 
 //      Q(x, y) = (y^2 / 3 - 1 / 2) + 2 y / 3 * (y - 3 / 4) - x
-void Ex3Problem::Q(const Vector& x, const Vector& y, Vector& qeval, int &Qeval_err) const
+void Ex3Problem::Q(const Vector& x, const Vector& y, Vector& qeval, int &Qeval_err, const bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimx, "Ex3Problem::Q -- Inconsistent dimensions");
   for (int i = 0; i < dimx; i++)

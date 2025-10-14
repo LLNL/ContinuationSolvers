@@ -63,8 +63,8 @@ protected:
    Array<int> y_partition; // y partitioned into [u, l]
 public:
    Ex5Problem(int n);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err) const;
+   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, const bool new_pt) const;
+   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, const bool new_pt) const;
    HypreParMatrix * DxF(const Vector &x, const Vector &y);
    HypreParMatrix * DyF(const Vector &x, const Vector &y);
    HypreParMatrix * DxQ(const Vector &x, const Vector &y);
@@ -287,7 +287,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
 // TO-DO: complete me!
 // Q(x, y = [ u ]) = [ u + (dc / du)^T l ]
 //          [ l ]    [ c(u)              ] 
-void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err) const
+void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, const bool new_pt) const
 {
    qeval = 0.0;
    BlockVector yblock(y_partition); yblock.Set(1.0, y);
@@ -312,7 +312,7 @@ void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeva
    Qeval_err = 0;
 }
 
-void Ex5Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err) const
+void Ex5Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, const bool new_pt) const
 {
    feval = 0.0;
    Feval_err = 0;

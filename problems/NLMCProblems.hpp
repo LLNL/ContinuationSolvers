@@ -22,8 +22,8 @@ protected:
 public:
    GeneralNLMCProblem();
    virtual void Init(HYPRE_BigInt * dofOffsetsx_, HYPRE_BigInt * dofOffsetsy_);
-   virtual void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const = 0;
-   virtual void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const = 0;
+   virtual void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err, const bool new_pt=true) const = 0;
+   virtual void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err, const bool new_pt=true) const = 0;
    virtual mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y) = 0;
    virtual mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y) = 0;
    virtual mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y) = 0;
@@ -49,20 +49,18 @@ class OptNLMCProblem : public GeneralNLMCProblem
 {
 protected:
    OptProblem * optproblem;
-   mfem::HypreParMatrix * dFdx;
-   mfem::HypreParMatrix * dFdy;
-   mfem::HypreParMatrix * dQdx;
-   mfem::HypreParMatrix * dQdy;
-   mfem::HypreParMatrix * Pc;
-
+   mfem::HypreParMatrix * dFdx = nullptr;
+   mfem::HypreParMatrix * dFdy = nullptr;
+   mfem::HypreParMatrix * dQdx = nullptr;
+   mfem::HypreParMatrix * dQdy = nullptr;
 public:
    OptNLMCProblem(OptProblem * problem_);
-   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const;
-   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const;
-   mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y);
-   mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y);
+   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err, const bool new_pt=true) const override;
+   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err, const bool new_pt=true) const override;
+   mfem::Operator * DxF(const mfem::Vector &x, const mfem::Vector &y) override;
+   mfem::Operator * DyF(const mfem::Vector &x, const mfem::Vector &y) override;
+   mfem::Operator * DxQ(const mfem::Vector &x, const mfem::Vector &y) override;
+   mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y) override;
    OptProblem * GetOptProblem() { return optproblem;  };
    virtual ~OptNLMCProblem();    
 };
@@ -93,8 +91,8 @@ public:
    virtual mfem::HypreParMatrix * residualJacobian(const mfem::Vector & u) = 0; 
    virtual mfem::Vector constraint(const mfem::Vector & u) const = 0;
    virtual mfem::HypreParMatrix * constraintJacobian(const mfem::Vector & u) = 0;
-   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err) const override;
-   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err) const override;
+   void F(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &feval, int &eval_err, const bool new_pt) const override;
+   void Q(const mfem::Vector &x, const mfem::Vector &y, mfem::Vector &qeval, int &eval_err, const bool new_pt) const override;
    mfem::Operator * DxF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dFdx; };
    mfem::Operator * DyF(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dFdy; };
    mfem::Operator * DxQ(const mfem::Vector &/*x*/, const mfem::Vector &/*y*/) override { return dQdx; };

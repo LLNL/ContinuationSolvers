@@ -37,12 +37,12 @@ using namespace mfem;
  *  where x = z (Lagrange multiplier)
  *        y = u primal variable)
  */
-class Ex1cProblem : public ParOptProblem
+class Ex1cProblem : public OptProblem
 {
 protected:
    Vector ul;
-   HypreParMatrix * dgdu;
-   HypreParMatrix * d2Edu2;
+   HypreParMatrix * dgdu = nullptr;
+   HypreParMatrix * d2Edu2 = nullptr;
 public:
    Ex1cProblem(int n);
    double E(const Vector & u, int & eval_err);
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 
 
 // Ex1Problem
-Ex1cProblem::Ex1cProblem(int n) : ParOptProblem(), 
+Ex1cProblem::Ex1cProblem(int n) : OptProblem(), 
 	dgdu(nullptr), d2Edu2(nullptr)
 {
   MFEM_VERIFY(n >= 1, "Ex1cProblem::Ex1cProblem -- problem must have nontrivial size");

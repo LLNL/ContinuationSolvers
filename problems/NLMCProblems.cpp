@@ -62,14 +62,10 @@ OptNLMCProblem::OptNLMCProblem(OptProblem * optproblem_)
       mfem::Vector temp(dimx); temp = 0.0;
       dFdx = GenerateHypreParMatrixFromDiagonal(dofOffsetsx, temp);
    }
-   dFdy = nullptr;
-   dQdx = nullptr;
-   dQdy = nullptr; 
-   Pc = nullptr;
 }
 
 // F(x, y) = g(y)
-void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & feval, int & eval_err) const
+void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & feval, int & eval_err, const bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx, "OptNLMCProblem::F -- Inconsistent dimensions");
   optproblem->g(y, feval, eval_err);
@@ -79,7 +75,7 @@ void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vec
 
 
 // Q(x, y) = \nabla_y L(y, x) = \nabla_y E(y) - (dg(y)/ dy)^T x
-void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & qeval, int &eval_err) const
+void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & qeval, int &eval_err, const bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy, "OptNLMCProblem::Q -- Inconsistent dimensions");
   
@@ -216,7 +212,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    }
 };
 
-void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err) const
+void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err, const bool new_pt) const
 {
    MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
    MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx,
@@ -227,7 +223,7 @@ void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Ve
 
 // Q = [  r + (dc/du)^T l]
 //     [ -c ]
-void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& qeval, int& Qeval_err) const
+void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& qeval, int& Qeval_err, const bool new_pt) const
 {
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy,
