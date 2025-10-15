@@ -99,6 +99,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    double betabar;
    while (jOpt < max_outer_iter)
    {
+      // new_x? at jOpt = 1 yes, otherwise no?
       opt_err = E(Xk, Eeval_err);
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
       if (iAmRoot && print_level > 0)
@@ -117,17 +118,17 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 break;
       }
       tr_centering = true;
-            
+      
+      // not new X      
       G(Xk, theta, GX, Geval_err);
-      ResidualFromG(GX, theta, rk); 
       JacG(Xk, theta, JGX);
+      ResidualFromG(GX, theta, rk); 
       
       if (iAmRoot && print_level > 0)
       {
 	 *hout << "delta = " << delta << std::endl;
 	 *hout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
       }
-      
       NewtonSolve(JGX, rk, dXNk); // Newton direction, associated to equation rk = 0
      
       JGX.MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
@@ -137,6 +138,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       Xtrial.Set(1.0, Xk);
       Xtrial.Add(1.0, dXtrk);
 
+      // new_x
       Residual(Xtrial, theta, rktrial, reval_err);
       mfem::Vector rktrial_comp_norm(3); rktrial_comp_norm = 0.0;
       for (int i = 0; i < 3; i++)
@@ -180,6 +182,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 
 	 Xtrial.Set(1.0, Xk);
 	 Xtrial.Add(1.0, dXtrk);
+         // new_x
 	 Residual(Xtrial, theta, rktrial, reval_err);
 	 if (reval_err > 0)
 	 {
@@ -319,6 +322,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    }
 	    Xtrialp.Set(1.0, Xk);
 	    Xtrialp.Add(t, dXp);
+            // new_x
 	    Residual(Xtrialp, theta_t, rktrial, reval_err);
 	    if (reval_err > 0)
 	    {
