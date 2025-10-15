@@ -254,13 +254,7 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
       break;
     }
   }
-  MPI_Allreduce(&Qeval_err_loc, &Qeval_err, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  if (Qeval_err > 0) {
-    Qeval_err = 1;
-  }
-  if (Qeval_err > 0 && mfem::Mpi::WorldRank() == 0) {
-    std::cout << "at least one nan entry\n";
-  }
+  MPI_Allreduce(&Qeval_err_loc, &Qeval_err, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 };
 
 
