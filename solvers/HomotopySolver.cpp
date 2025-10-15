@@ -101,7 +101,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    {
       opt_err = E(Xk, Eeval_err);
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
-      if (iAmRoot)
+      if (iAmRoot && print_level > 0)
       {
          *hout << "-----------------\n";
          *hout << "jOpt = " << jOpt << std::endl;
@@ -109,7 +109,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       }
       if (opt_err < tol)
       {
-         if (iAmRoot)
+         if (iAmRoot && print_level > 0)
 	 {
             *hout << "NMCP solver converged!\n";
 	 }
@@ -117,12 +117,12 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 break;
       }
       tr_centering = true;
-      
+            
       G(Xk, theta, GX, Geval_err);
       ResidualFromG(GX, theta, rk); 
       JacG(Xk, theta, JGX);
       
-      if (iAmRoot)
+      if (iAmRoot && print_level > 0)
       {
 	 *hout << "delta = " << delta << std::endl;
 	 *hout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
@@ -145,7 +145,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       }
       inFilterRegion = FilterCheck(rktrial_comp_norm);
       inNeighborhood = NeighborhoodCheck(Xtrial, rktrial, theta, beta1, betabar);
-      if (iAmRoot)
+      if (iAmRoot && print_level > 0)
       {
          if (inFilterRegion)
          {
@@ -183,9 +183,9 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 Residual(Xtrial, theta, rktrial, reval_err);
 	 if (reval_err > 0)
 	 {
-	    if (iAmRoot)
+	    if (iAmRoot && print_level > 0)
 	    {
-	       *hout << "TRcen -- bad evaluation of residual\n";
+	       *hout << "TRcen -- bad evaluation of residual (reducing trust-region radius)\n";
 	    }   
 	    delta *= 0.5;
 	    continue;
@@ -206,7 +206,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
          double pred_decrease   = rk_sqrnorm - rklinear_sqrnorm; // || rk ||_2^2 - || rk + Jk * dx||_2^2
 	 double actual_decrease = rk_sqrnorm - rktrial_sqrnorm;  // || r(Xk) ||_2^2 - || r(Xk + dX) ||_2^2
 	 rhok = actual_decrease / pred_decrease;
-	 if (iAmRoot)
+	 if (iAmRoot && print_level > 0)
 	 {
 	    *hout << "-*-*-*-*-*-*-*-*-*\n";
 	    *hout << "TRcen -- delta = " << delta << std::endl;
@@ -223,20 +223,23 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    }
             inFilterRegion = FilterCheck(rktrial_comp_norm);
 	    inNeighborhood = NeighborhoodCheck(Xtrial, rktrial, theta, beta1, betabar);
-	    if (inFilterRegion && iAmRoot)
-	    {
-	       *hout << "TRcen -- in filter region\n";
-	    }
-	    if (!inNeighborhood && iAmRoot)
-	    {
-	       *hout << "TRcen -- not in beta1 neighborhood\n";
-	    }
+            if (iAmRoot && print_level > 0)
+            {
+	       if (inFilterRegion)
+	       {
+	          *hout << "TRcen -- in filter region\n";
+	       }
+	       if (!inNeighborhood)
+	       {
+	          *hout << "TRcen -- not in beta1 neighborhood\n";
+	       }
+            }
 	    if (!inFilterRegion && inNeighborhood && reval_err == 0)
 	    {
 	       UpdateFilter(rktrial_comp_norm);
 	       delta *= 0.5;
 	       Xk.Set(1.0, Xtrial);
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {
 	          *hout << "TRcen -- accepted trial point, decreasing TR-radius\n";
 	       }
@@ -245,7 +248,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    else
 	    {
 	       delta *= 0.5;
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {
 	          *hout << "TRcen -- rejected trial point, decreasing TR-radius\n";
 	       }
@@ -255,7 +258,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 else if (rhok < eta2)
 	 {
 	    Xk.Set(1.0, Xtrial);
-	    if (iAmRoot)
+	    if (iAmRoot && print_level > 0)
 	    {
 	       *hout << "TRcen -- accepted trial point\n";
 	    }	       
@@ -263,7 +266,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 }
 	 else
 	 {
-	    if (iAmRoot)
+	    if (iAmRoot && print_level > 0)
 	    {
 	       *hout << "TRcen -- accepted trial point, potentially increasing TR-radius\n";
 	    }
@@ -283,7 +286,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       inNeighborhood = NeighborhoodCheck(Xk, rk, theta, beta0, betabar);
       if (inNeighborhood)
       {
-         if (iAmRoot)
+         if (iAmRoot && print_level > 0)
 	 {
 	    *hout << "CenManagement -- reducing homotopy parameter\n";
 	 }
@@ -307,7 +310,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    theta_t = (1.0 - t) * theta + t * thetaplus;
 	    if (t < 1.e-8)
 	    {
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {      
 	          *hout << "CenManagement -- predictor step length too small\n";
 	       }
@@ -319,7 +322,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    Residual(Xtrialp, theta_t, rktrial, reval_err);
 	    if (reval_err > 0)
 	    {
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {
 	           *hout << "CenManagement -- bad evaluation of residual\n";
 	       }   
@@ -336,7 +339,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	       theta = theta_t;
 	       delta = delta_MAX;
 	       ClearFilter();
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {
 	          *hout << "CenManagement -- accepted linesearch trial point\n";
 	          *hout << "CenManagement -- theta = " << theta << std::endl;
@@ -345,7 +348,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	    else
 	    {
 	       t = 0.995 * pow(t, 3.0);
-	       if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
 	       {
 	          *hout << "CenManagement -- not in neighborhood\n";
 	          *hout << "CenManagement -- reducing t\n";
@@ -358,7 +361,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       }
       else
       {
-         if (iAmRoot)
+         if (iAmRoot && print_level > 0)
 	 {
 	    *hout << "CenManagement -- skipping\n";
 	    *hout << "CenManagement -- applying heuristics for quick termination resolution\n";
@@ -370,35 +373,41 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
          double gk_norm = mfem::GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
 	 if (gk_norm < theta * epsgrad)
 	 {
-	    if (earlyTermination)
-	    {
-	       if (iAmRoot)
+            if (iAmRoot && print_level > 0)
+            {
+               if (earlyTermination)
 	       {
 	          *hout << "Exiting -- converged to a local stationary point of ||rk||_2^2\n";
 	       }
-	       break;
-	    }
-	    else if (iAmRoot)
+               else
+               {
+	          *hout << "Warning -- apparent convergence to a local stationary point of ||rk||_2^2\n";
+               }
+            }
+            if (earlyTermination)
 	    {
-	       *hout << "Warning -- apparent convergence to a local stationary point of ||rk||_2^2\n";
-	    }
+	       break;
+            }
 	 }
 	 else 
 	 {	 
 	    double Xk_norm = mfem::GlobalLpNorm(mfem::infinity(), Xk.Normlinf(), MPI_COMM_WORLD);
 	    if (Xk_norm > deltabnd)
             {
-	       if (earlyTermination)
-	       {
-	          if (iAmRoot)
+	       if (iAmRoot && print_level > 0)
+               {
+                  if (earlyTermination)
 	          {
 	             *hout << "Exiting -- iterates are unbounded\n";
 	          }
-	          break;
-	       }
-	       else if (iAmRoot)
+	          else
+	          {
+	             *hout << "Warning -- iterates appear to be unbounded\n";
+	          }
+               }
+               if (earlyTermination)
 	       {
-	          *hout << "Warning -- iterates appear to be unbounded\n";
+	          break;
 	       }
 	    }
 	    else
@@ -407,17 +416,21 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	       double GX0_norm = mfem::GlobalLpNorm(2, GX0.Norml2(), MPI_COMM_WORLD);
 	       if (GX0_norm > feps * tol && theta < tol)
 	       {
-	          if (earlyTermination)
-		  {
-		     if (iAmRoot)
+	          if (iAmRoot && print_level > 0)
+                  {
+                     if (earlyTermination)
 		     {
 		        *hout << "Exiting -- convergence to a non-interior point\n";
-		     } 
-		     break;
-		  }
-		  else if(iAmRoot)
+		     }
+                     else
+                     {
+		        *hout << "Exiting -- convergence to a non-interior point\n";
+                     }
+          
+                  }
+                  if (earlyTermination)
 		  {
-		     *hout << "Warning -- convergence to a non-interior point detected\n";
+		     break;
 		  }
 	       }
 	    }
@@ -736,7 +749,7 @@ void HomotopySolver::DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockV
    if (dXN_norm <= delta)
    {
       dXtr.Set(1.0, dXN);
-      if (iAmRoot)
+      if (iAmRoot && print_level > 0)
       {
          *hout << "dog-leg using Newton direction\n";
       }
@@ -755,7 +768,7 @@ void HomotopySolver::DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockV
       if (dXsd_norm >= delta)
       {
          dXtr.Set(-delta / gk_norm, gk);
-	 if (iAmRoot)
+	 if (iAmRoot && print_level > 0)
 	 {
 	    *hout << "dog-leg using steepest descent direction\n";
 	 }
@@ -780,7 +793,7 @@ void HomotopySolver::DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockV
 	 }
          dXtr.Set(t_star, dXN);
 	 dXtr.Add((1.0 - t_star), dXsd);
-	 if (iAmRoot)
+	 if (iAmRoot && print_level > 0)
 	 {
 	    *hout << "dog-leg using combination of Newton and SD directions\n";
 	 }

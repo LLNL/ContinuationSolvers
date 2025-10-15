@@ -68,6 +68,7 @@ protected:
 
    int MyRank;
    bool iAmRoot;
+   int print_level = 0;
 
    std::ostream * hout = &std::cout;
 public:
@@ -98,6 +99,7 @@ public:
    };
    void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
    mfem::Array<int> & GetKrylovIterations() {return krylov_its;};
+   void SetPrintLevel(int print_level_) { print_level = print_level_; }; 
    virtual ~HomotopySolver();
 };
 
