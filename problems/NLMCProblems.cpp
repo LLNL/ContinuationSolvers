@@ -65,7 +65,7 @@ OptNLMCProblem::OptNLMCProblem(OptProblem * optproblem_)
 }
 
 // F(x, y) = g(y)
-void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & feval, int & eval_err, const bool new_pt) const
+void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & feval, int & eval_err, bool /*new_pt*/) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx, "OptNLMCProblem::F -- Inconsistent dimensions");
   optproblem->g(y, feval, eval_err);
@@ -75,7 +75,7 @@ void OptNLMCProblem::F(const mfem::Vector & x, const mfem::Vector & y, mfem::Vec
 
 
 // Q(x, y) = \nabla_y L(y, x) = \nabla_y E(y) - (dg(y)/ dy)^T x
-void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & qeval, int &eval_err, const bool new_pt) const
+void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vector & qeval, int &eval_err, bool /*new_pt*/) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy, "OptNLMCProblem::Q -- Inconsistent dimensions");
   
@@ -91,20 +91,20 @@ void OptNLMCProblem::Q(const mfem::Vector & x, const mfem::Vector & y, mfem::Vec
 
 
 // dF/dx = 0
-mfem::Operator * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vector & /*y*/)
+mfem::Operator * OptNLMCProblem::DxF(const mfem::Vector & /*x*/, const mfem::Vector & /*y*/, bool /*new_pt*/)
 {
    return dFdx;
 }
 
 // dF/dy = dg/dy
-mfem::Operator * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DyF(const mfem::Vector & /*x*/, const mfem::Vector & y, bool /*new_pt*/)
 {
    return optproblem->Ddg(y);
 }
 
 
 // dQ/dx = -(dg/dy)^T
-mfem::Operator * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vector & y, bool /*new_pt*/)
 {
    mfem::Operator * J = optproblem->Ddg(y);
    auto Jhypre = dynamic_cast<mfem::HypreParMatrix *>(J);
@@ -122,7 +122,7 @@ mfem::Operator * OptNLMCProblem::DxQ(const mfem::Vector & /*x*/, const mfem::Vec
 
 
 // dQdy = Hessian(E) - second order derivaives in g
-mfem::Operator * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vector & y)
+mfem::Operator * OptNLMCProblem::DyQ(const mfem::Vector & /*x*/, const mfem::Vector & y, bool /*new_pt*/)
 {
    return optproblem->DddE(y);
 }
@@ -212,7 +212,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    }
 };
 
-void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err, const bool new_pt) const
+void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err, bool /*new_pt*/) const
 {
    MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
    MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx,
@@ -223,7 +223,7 @@ void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Ve
 
 // Q = [  r + (dc/du)^T l]
 //     [ -c ]
-void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& qeval, int& Qeval_err, const bool new_pt) const
+void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& qeval, int& Qeval_err, bool new_pt) const
 {
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy,
@@ -236,12 +236,12 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
   auto u = yblock.GetBlock(0);
   auto l = yblock.GetBlock(1);
-  auto residual_vector = residual(u);
+  auto residual_vector = residual(u, new_pt);
   qblock.GetBlock(0).Set(1.0, residual_vector);
-  auto residual_contribution = constraintJacobianTvp(u, l);
+  auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
   qblock.GetBlock(0).Add(1.0, residual_contribution);
 
-  auto constraint_eval = constraint(u);
+  auto constraint_eval = constraint(u, new_pt);
   qblock.GetBlock(1).Set(-1.0, constraint_eval);
 
   qeval.Set(1.0, qblock);
@@ -263,7 +263,7 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
 // dQdy = [ dr/du   dc/du^T]
 //        [-dc/du   0  ]
-mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*/, const mfem::Vector& y)
+mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*/, const mfem::Vector& y, bool new_pt)
 {
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(y.Size() == dimy, "InertialReliefProblem::DyQ -- Inconsistent dimensions");
@@ -278,8 +278,8 @@ mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*
     delete dQdy;
   }
   {
-    auto drdu = residualJacobian(u);
-    auto negdcdu = constraintJacobian(u);
+    auto drdu = residualJacobian(u, new_pt);
+    auto negdcdu = constraintJacobian(u, new_pt);
     auto dcduT = negdcdu->Transpose();
     mfem::Vector scale(dimc); scale = -1.0;
     negdcdu->ScaleRows(scale);
