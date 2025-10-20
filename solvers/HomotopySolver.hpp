@@ -28,7 +28,7 @@ protected:
    mfem::HypreParMatrix * dFdx = nullptr;
    mfem::HypreParMatrix * dFdy = nullptr;
    mfem::HypreParMatrix * dQdx = nullptr;
-   mfem::HypreParMatrix * dQdy = nullptr;;
+   mfem::HypreParMatrix * dQdy = nullptr;
 
    mfem::HypreParMatrix * JGxx = nullptr;
    mfem::HypreParMatrix * JGxs = nullptr;
