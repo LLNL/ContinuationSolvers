@@ -95,6 +95,38 @@ mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * 
   return Phypre;
 }
 
+mfem::HypreParMatrix * GenerateProjector2(HYPRE_BigInt * reduced_offsets, HYPRE_BigInt * offsets, HYPRE_Int * mask)
+{
+  int n_cols_loc = offsets[1] - offsets[0];
+  int n_cols_glb = 0;
+  MPI_Allreduce(&n_cols_loc, &n_cols_glb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  int n_rows_loc = reduced_offsets[1] - reduced_offsets[0];
+
+  mfem::SparseMatrix * Psparse = new mfem::SparseMatrix(n_rows_loc, n_cols_glb);
+  mfem::Array<int> cols;
+  mfem::Vector entries;
+  cols.SetSize(1);
+  entries.SetSize(1);
+
+  int row = 0;
+  for(int j = 0; j < n_cols_loc; j++)
+  {
+    if (mask[j] == 1)
+    {
+      cols[0] = offsets[0] + j;
+      entries(0) = 1.0;
+      Psparse->SetRow(row, cols, entries);
+      row += 1;
+    }
+  }
+  Psparse->Finalize();
+  mfem::HypreParMatrix * Phypre = nullptr;
+  Phypre = GenerateHypreParMatrixFromSparseMatrix2(reduced_offsets, offsets, Psparse);
+  delete Psparse;
+  return Phypre;
+}
+
 mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, const mfem::HypreParVector & mask)
 {
   int n_cols_loc = offsets[1] - offsets[0];
@@ -123,6 +155,38 @@ mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * 
   Psparse->Finalize();
   mfem::HypreParMatrix * Phypre = nullptr;
   Phypre = GenerateHypreParMatrixFromSparseMatrix(offsets, reduced_offsets, Psparse);
+  delete Psparse;
+  return Phypre;
+}
+
+mfem::HypreParMatrix * GenerateProjector2(HYPRE_BigInt * reduced_offsets, HYPRE_BigInt * offsets, const mfem::HypreParVector & mask)
+{
+  int n_cols_loc = offsets[1] - offsets[0];
+  int n_cols_glb = 0;
+  MPI_Allreduce(&n_cols_loc, &n_cols_glb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  int n_rows_loc = reduced_offsets[1] - reduced_offsets[0];
+
+  mfem::SparseMatrix * Psparse = new mfem::SparseMatrix(n_rows_loc, n_cols_glb);
+  mfem::Array<int> cols;
+  mfem::Vector entries;
+  cols.SetSize(1);
+  entries.SetSize(1);
+
+  int row = 0;
+  for(int j = 0; j < n_cols_loc; j++)
+  {
+    if (mask(j) > 0.5)
+    {
+      cols[0] = offsets[0] + j;
+      entries(0) = 1.0;
+      Psparse->SetRow(row, cols, entries);
+      row += 1;
+    }
+  }
+  Psparse->Finalize();
+  mfem::HypreParMatrix * Phypre = nullptr;
+  Phypre = GenerateHypreParMatrixFromSparseMatrix2(reduced_offsets, offsets, Psparse);
   delete Psparse;
   return Phypre;
 }

@@ -21,6 +21,10 @@ mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * 
 
 mfem::HypreParMatrix * GenerateProjector(HYPRE_BigInt * offsets, HYPRE_BigInt * reduced_offsets, const mfem::HypreParVector & mask);
 
+mfem::HypreParMatrix * GenerateProjector2(HYPRE_BigInt * reduced_offsets, HYPRE_BigInt * offsets, HYPRE_Int * mask);
+
+mfem::HypreParMatrix * GenerateProjector2(HYPRE_BigInt * reduced_offsets, HYPRE_BigInt * offsets, const mfem::HypreParVector & mask);
+
 
 HYPRE_BigInt * offsetsFromLocalSizes(int n, MPI_Comm comm = MPI_COMM_WORLD);
 

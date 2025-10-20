@@ -163,7 +163,7 @@ ReducedOptProblem::ReducedOptProblem(OptProblem * problem_, HYPRE_Int * constrai
   HYPRE_BigInt * constraintOffsets;
   constraintOffsets = offsetsFromLocalSizes(nProblemConstraints);
   
-  P = GenerateProjector(constraintOffsets, constraintOffsets_reduced, constraintMask);
+  P = GenerateProjector2(constraintOffsets_reduced, constraintOffsets, constraintMask);
 
   Init(dofOffsets, constraintOffsets_reduced);
   delete[] constraintOffsets_reduced;
@@ -198,7 +198,7 @@ ReducedOptProblem::ReducedOptProblem(OptProblem * problem_, mfem::HypreParVector
   HYPRE_BigInt * constraintOffsets;
   constraintOffsets = offsetsFromLocalSizes(nProblemConstraints);
   
-  P = GenerateProjector(constraintOffsets, constraintOffsets_reduced, constraintMask);
+  P = GenerateProjector2(constraintOffsets_reduced, constraintOffsets, constraintMask);
 
   Init(dofOffsets, constraintOffsets_reduced);
   delete[] constraintOffsets_reduced;
