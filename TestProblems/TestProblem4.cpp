@@ -46,6 +46,7 @@ protected:
    HypreParMatrix * dFdy = nullptr;
    HypreParMatrix * dQdx = nullptr;
    HypreParMatrix * dQdy = nullptr;
+   mutable Vector q_cached;
    Array<int> y_partition; // y partitioned into [u, l]
 public:
    Ex4Problem(int n);
@@ -108,6 +109,7 @@ int main(int argc, char *argv[])
    Vector yf(dimy); yf = 0.0;
    HomotopySolver solver(&problem);
    solver.SetMaxIter(nmcpSolverMaxIter);
+   solver.SetPrintLevel(1);
    solver.Mult(x0, y0, xf, yf);
    bool converged = solver.GetConverged();
    MFEM_VERIFY(converged, "solver did not converge\n");
@@ -256,6 +258,7 @@ Ex4Problem::Ex4Problem(int n) : GeneralNLMCProblem()
      delete aThypre;
      delete I;
   }
+  q_cached.SetSize(dimy);
 
   delete[] cOffsets;
   delete[] uOffsets;
@@ -268,11 +271,19 @@ Ex4Problem::Ex4Problem(int n) : GeneralNLMCProblem()
 
 void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, bool new_pt) const
 {
-   qeval = 0.0;
-   dQdy->Mult(y, qeval);
-   if (dimc > 0)
+   if (new_pt)
    {
-      qeval(dimu) -= rho;
+      qeval = 0.0;
+      dQdy->Mult(y, qeval);
+      if (dimc > 0)
+      {
+         qeval(dimu) -= rho;
+      }
+      q_cached.Set(1.0, qeval);
+   }
+   else
+   {
+      qeval.Set(1.0, q_cached);
    }
    Qeval_err = 0;
 }
