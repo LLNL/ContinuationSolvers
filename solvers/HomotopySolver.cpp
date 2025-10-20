@@ -4,9 +4,7 @@
 #include "AMGF.hpp"
 
 
-HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4),
-	dFdx(nullptr), dFdy(nullptr), dQdx(nullptr), dQdy(nullptr), JGxx(nullptr), JGxs(nullptr), JGsx(nullptr),
-   JGss(nullptr), JGsy(nullptr), JGyx(nullptr), JGyy(nullptr), linSolver(nullptr), filter(0), krylov_its(0)
+HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4), filter(0), krylov_its(0)
 {
    dimx = problem->GetDimx();
    dimy = problem->GetDimy();
@@ -60,7 +58,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    mfem::BlockVector rktrial(block_offsets_xsy); rktrial = 0.0;
    mfem::BlockVector rklinear(block_offsets_xsy); rklinear = 0.0;
    mfem::BlockVector gk(block_offsets_xsy); gk = 0.0; // grad(mk) = grad_z(||rk + Jk * z||)|_{z=0} = 2 Jk^T rk
-   mfem::BlockOperator JGX(block_offsets_xsy, block_offsets_xsy);
+   
    Xk.GetBlock(0).Set(1.0, x0);
    Xk.GetBlock(1).Set(0.0, x0); // s0 = 0
    Xk.GetBlock(2).Set(1.0, y0);
@@ -122,7 +120,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       
       // not new X
       G(Xk, theta, GX, Geval_err, new_pt);
-      JacG(Xk, theta, JGX, new_pt);
+      JacG(Xk, theta, new_pt);
       ResidualFromG(GX, theta, rk); 
       
       if (iAmRoot && print_level > 0)
@@ -130,10 +128,10 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 *hout << "delta = " << delta << std::endl;
 	 *hout << "||rk||_2 = " << rk.Norml2() << ", (theta = " << theta << ")\n";
       }
-      NewtonSolve(JGX, rk, dXNk); // Newton direction, associated to equation rk = 0
+      NewtonSolve(*JGX, rk, dXNk); // Newton direction, associated to equation rk = 0
      
-      JGX.MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
-      DogLeg(JGX, gk, kappa_delta * delta_MAX, dXNk, dXtrk);
+      JGX->MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
+      DogLeg(*JGX, gk, kappa_delta * delta_MAX, dXNk, dXtrk);
       
       // compute trial point
       Xtrial.Set(1.0, Xk);
@@ -179,7 +177,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 {
 	    break;
 	 }
-	 DogLeg(JGX, gk, delta, dXNk, dXtrk);
+	 DogLeg(*JGX, gk, delta, dXNk, dXtrk);
 	 
 	 
 	 Xtrial.Set(1.0, Xk);
@@ -197,7 +195,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 }
          
 	 // linearized residual, rk + Jk * dX 
-	 JGX.Mult(dXtrk, rklinear);
+	 JGX->Mult(dXtrk, rklinear);
          rklinear.Add(1.0, rk);
          /* evaluate the reduction in the objective
 	  * (|| r(x) ||_2)^2
@@ -282,7 +280,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       } 
       
       jOpt += 1;
-      JacG(Xk, theta, JGX);
+      JacG(Xk, theta);
 
       Residual(Xk, theta, rk, reval_err);
       MFEM_VERIFY(reval_err == 0, "bad residual evaluation, this should have been caught\n");
@@ -305,7 +303,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 
 	 PredictorResidual(Xk, theta, thetaplus, rkp, reval_err);
 	 MFEM_VERIFY(reval_err == 0, "bad residual evaluation, this should have been caught\n");
-         NewtonSolve(JGX, rkp, dXp);
+         NewtonSolve(*JGX, rkp, dXp);
          // line search
 	 bool linesearch_converged = false;
 	 int max_linesearch_steps = 60;
@@ -375,7 +373,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 beta0 = fbeta * betabar;
 	 beta1 = fbeta * beta0;
 	 // compute grad(||r||^2) = ...
-         JGX.MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
+         JGX->MultTranspose(rk, gk); gk *= 2.0; // gradient of quadratic-model (\nabla_{dX}(||rk + Jk * dX||_2)^2)_{|dX=0}= 2 Jk^T rk
          double gk_norm = mfem::GlobalLpNorm(2, gk.Norml2(), MPI_COMM_WORLD);
 	 if (gk_norm < theta * epsgrad)
 	 {
@@ -591,7 +589,7 @@ void HomotopySolver::PredictorResidual(const mfem::BlockVector & X, const double
  * \nabla G_t(x, s, y) = [dG_(2,1)   dG_(2,2)   dG_(2,3)]
  *                       [dG_(3,1)     0        dG_(3,3)]
  */
-void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::BlockOperator & JacG, bool new_pt)
+void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, bool new_pt)
 {
    // I - diag( (x - s) / sqrt( (x - s)^2 + 4 * (\theta a)^q)
    mfem::Vector diagJacGxx(dimx); diagJacGxx = 0.0;
@@ -677,9 +675,14 @@ void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::
    JGyy = mfem::Add(1.0, *dQdy, 1.0, *Dtgy);
    delete Dtgy; 
 
-   JacG.SetBlock(0, 0, JGxx); JacG.SetBlock(0, 1, JGxs);
-   JacG.SetBlock(1, 0, JGsx); JacG.SetBlock(1, 1, JGss); JacG.SetBlock(1, 2, JGsy);
-   JacG.SetBlock(2, 0, JGyx);                            JacG.SetBlock(2, 2, JGyy);
+   if (JGX)
+   {
+      delete JGX;
+   }
+   JGX = new mfem::BlockOperator(block_offsets_xsy, block_offsets_xsy);
+   JGX->SetBlock(0, 0, JGxx); JGX->SetBlock(0, 1, JGxs);
+   JGX->SetBlock(1, 0, JGsx); JGX->SetBlock(1, 1, JGss); JGX->SetBlock(1, 2, JGsy);
+   JGX->SetBlock(2, 0, JGyx);                            JGX->SetBlock(2, 2, JGyy);
 }
 
 
@@ -949,6 +952,10 @@ HomotopySolver::~HomotopySolver()
    if (JGyy)
    {
       delete JGyy;
+   }
+   if (JGX)
+   {
+      delete JGX;
    }
    ClearFilter();
 }

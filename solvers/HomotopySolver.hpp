@@ -25,10 +25,22 @@ protected:
    // solver will not own these pointers
    // memory management should be handled by 
    // problem class 
-   mfem::HypreParMatrix * dFdx, * dFdy, * dQdx, * dQdy;
+   mfem::HypreParMatrix * dFdx = nullptr;
+   mfem::HypreParMatrix * dFdy = nullptr;
+   mfem::HypreParMatrix * dQdx = nullptr;
+   mfem::HypreParMatrix * dQdy = nullptr;;
 
-   mfem::HypreParMatrix * JGxx, * JGxs, * JGsx, * JGss, * JGsy, * JGyx,  * JGyy; 
-   mfem::Solver * linSolver; 
+   mfem::HypreParMatrix * JGxx = nullptr;
+   mfem::HypreParMatrix * JGxs = nullptr;
+   mfem::HypreParMatrix * JGsx = nullptr;
+   mfem::HypreParMatrix * JGss = nullptr;
+   mfem::HypreParMatrix * JGsy = nullptr;
+   mfem::HypreParMatrix * JGyx = nullptr;
+   mfem::HypreParMatrix * JGyy = nullptr;
+
+   mfem::BlockOperator * JGX = nullptr;
+   
+   mfem::Solver * linSolver = nullptr; 
    // Homotopy variable/parameters (eq 12.)
    double theta0 = 0.9;
    const double p = 1.5;
@@ -81,7 +93,7 @@ public:
    void Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int &reval_err, bool new_pt=true);
    void ResidualFromG(const mfem::BlockVector & GX, const double theta, mfem::BlockVector & r);
    void PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err, bool new_pt = true);
-   void JacG(const mfem::BlockVector & X, const double theta, mfem::BlockOperator & JacG, bool new_pt=true);
+   void JacG(const mfem::BlockVector & X, const double theta, bool new_pt=true);
    void NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVector & rk, mfem::BlockVector & dXN);
    void DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockVector & gk, const double delta, const mfem::BlockVector & dXN, mfem::BlockVector & dXtr);
    bool FilterCheck(const mfem::Vector & r_comp_norm);
