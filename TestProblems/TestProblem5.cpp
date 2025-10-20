@@ -208,7 +208,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimx, dimxglb, nentries);
-     dFdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsx, temp);
+     dFdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsx, temp);
      delete temp;
   }
 
@@ -216,7 +216,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimx, dimyglb, nentries);
-     dFdy = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsy, temp);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, temp);
      delete temp;
   }
 
@@ -224,7 +224,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimy, dimxglb, nentries);
-     dQdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsy, dofOffsetsx, temp);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, temp);
      delete temp;
   }
 }
@@ -323,7 +323,7 @@ HypreParMatrix * Ex5Problem::DyQ(const Vector& x, const Vector& y, bool new_pt)
         aTmat = new SparseMatrix(dimc, I->GetGlobalNumCols(), dimc);
      }
 
-     HypreParMatrix * aThypre = GenerateHypreParMatrixFromSparseMatrix2(cOffsets, uOffsets, aTmat);
+     HypreParMatrix * aThypre = GenerateHypreParMatrixFromSparseMatrix(cOffsets, uOffsets, aTmat);
 
      HypreParMatrix * ahypre = aThypre->Transpose();
 

@@ -202,7 +202,7 @@ Ex1cProblem::Ex1cProblem(int n) : OptProblem(),
      Vector entries(1); entries = 1.0;
      dgdumat->SetRow(0, cols, entries);
   }
-  dgdu = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsM, dofOffsetsU, dgdumat);
+  dgdu = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsM, dofOffsetsU, dgdumat);
   delete dgdumat;
 
   d2Edu2 = GenerateHypreParMatrixFromDiagonal(dofOffsetsU, temp);

@@ -204,7 +204,7 @@ Ex1Problem::Ex1Problem(int n, bool constraints_) : GeneralNLMCProblem(),
   {
      int nentries = 0;
      SparseMatrix * tempSparse = new SparseMatrix(dimx, dimyglb, nentries);
-     dFdy = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsy, tempSparse);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, tempSparse);
      delete tempSparse;
   }
 
@@ -217,7 +217,7 @@ Ex1Problem::Ex1Problem(int n, bool constraints_) : GeneralNLMCProblem(),
   {
      int nentries = 0;
      SparseMatrix * tempSparse = new SparseMatrix(dimy, dimxglb, nentries);
-     dQdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsy, dofOffsetsx, tempSparse);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, tempSparse);
      delete tempSparse;
   }
   // random entries in [-1, 1]
