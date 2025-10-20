@@ -74,18 +74,18 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    bool inNeighborhood = false;
    const int max_tr_centering = 30;
    bool tr_centering;
-   
+   bool new_pt = true;
+
    int Geval_err;
    int reval_err;
    int Feval_err;
    int Qeval_err;
    int Eeval_err;
    
-   // in Cosmin's matlab code this is fx and fy
    mfem::Vector F0(dimx); F0 = 0.0;
    mfem::Vector Q0(dimy); Q0 = 0.0;
-   problem->F(Xk.GetBlock(0), Xk.GetBlock(2), F0, Feval_err);
-   problem->Q(Xk.GetBlock(0), Xk.GetBlock(2), Q0, Qeval_err);
+   problem->F(Xk.GetBlock(0), Xk.GetBlock(2), F0, Feval_err, new_pt);
+   problem->Q(Xk.GetBlock(0), Xk.GetBlock(2), Q0, Qeval_err, new_pt);
    MFEM_VERIFY(Feval_err == 0 && Qeval_err == 0, "unsuccessful evaluation of F and/or Q at initial point of Homotopy solver");
 
    double cx_scale = mfem::GlobalLpNorm(2, F0.Norml2(), MPI_COMM_WORLD);
@@ -100,7 +100,8 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    while (jOpt < max_outer_iter)
    {
       // new_x? at jOpt = 1 yes, otherwise no?
-      opt_err = E(Xk, Eeval_err);
+      new_pt = false;
+      opt_err = E(Xk, Eeval_err, new_pt);
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
       if (iAmRoot && print_level > 0)
       {
@@ -119,9 +120,9 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       }
       tr_centering = true;
       
-      // not new X      
-      G(Xk, theta, GX, Geval_err);
-      JacG(Xk, theta, JGX);
+      // not new X
+      G(Xk, theta, GX, Geval_err, new_pt);
+      JacG(Xk, theta, JGX, new_pt);
       ResidualFromG(GX, theta, rk); 
       
       if (iAmRoot && print_level > 0)
@@ -139,7 +140,8 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
       Xtrial.Add(1.0, dXtrk);
 
       // new_x
-      Residual(Xtrial, theta, rktrial, reval_err);
+      new_pt = true;
+      Residual(Xtrial, theta, rktrial, reval_err, new_pt);
       mfem::Vector rktrial_comp_norm(3); rktrial_comp_norm = 0.0;
       for (int i = 0; i < 3; i++)
       {
@@ -183,7 +185,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
 	 Xtrial.Set(1.0, Xk);
 	 Xtrial.Add(1.0, dXtrk);
          // new_x
-	 Residual(Xtrial, theta, rktrial, reval_err);
+	 Residual(Xtrial, theta, rktrial, reval_err, new_pt);
 	 if (reval_err > 0)
 	 {
 	    if (iAmRoot && print_level > 0)
@@ -455,7 +457,7 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
  */
 
 
-void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err)
+void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err, bool new_pt)
 {
    int Feval_err = 0;
    int Qeval_err = 0;
@@ -470,7 +472,7 @@ void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::Bl
    GX.GetBlock(0).Add(-1.0, tempx);
 
    tempx = 0.0;
-   problem->F(X.GetBlock(0), X.GetBlock(2), tempx, Feval_err);
+   problem->F(X.GetBlock(0), X.GetBlock(2), tempx, Feval_err, new_pt);
    for (int i = 0; i < dimx; i++)
    {
       tempx(i) += std::pow(theta * gammax(i), p) * X(i);
@@ -479,7 +481,7 @@ void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::Bl
    GX.GetBlock(1).Add(-1.0, tempx);
    
    mfem::Vector tempy(dimy); tempy = 0.0;
-   problem->Q(X.GetBlock(0), X.GetBlock(2), tempy, Qeval_err);
+   problem->Q(X.GetBlock(0), X.GetBlock(2), tempy, Qeval_err, new_pt);
    for (int i = 0; i < dimy; i++)
    {
       tempy(i) += std::pow(theta * gammay(i), p) * X.GetBlock(2)(i);
@@ -488,7 +490,7 @@ void HomotopySolver::G(const mfem::BlockVector & X, const double theta, mfem::Bl
    Geval_err = std::max(Feval_err, Qeval_err);
 }
 
-double HomotopySolver::E(const mfem::BlockVector &X, int & Eeval_err)
+double HomotopySolver::E(const mfem::BlockVector &X, int & Eeval_err, bool new_pt)
 {
    mfem::Vector x(dimx); x = 0.0;
    mfem::Vector s(dimx); s = 0.0;
@@ -513,7 +515,7 @@ double HomotopySolver::E(const mfem::BlockVector &X, int & Eeval_err)
    }
 
    mfem::BlockVector r0(block_offsets_xsy); r0 = 0.0;
-   Residual(X, 0.0, r0, Eeval_err); // residual at \theta = 0
+   Residual(X, 0.0, r0, Eeval_err, new_pt); // residual at \theta = 0
 
    mfem::Array<double> r0_infnorms(3);
    for (int i = 0; i < 3; i++)
@@ -539,9 +541,9 @@ double HomotopySolver::E(const mfem::BlockVector &X, int & Eeval_err)
 
 
 
-void HomotopySolver::Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int & reval_err)
+void HomotopySolver::Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int & reval_err, bool new_pt)
 {
-   G(X, theta, r, reval_err);
+   G(X, theta, r, reval_err, new_pt);
    r.GetBlock(0).Add(-theta, bx);
    r.GetBlock(1).Add(-theta, cx);
    r.GetBlock(2).Add(-theta, cy);
@@ -556,9 +558,9 @@ void HomotopySolver::ResidualFromG(const mfem::BlockVector & GX, const double th
 }
 
 
-void HomotopySolver::PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err)
+void HomotopySolver::PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err, bool new_pt)
 {
-   G(X, theta, r, reval_err);
+   G(X, theta, r, reval_err, new_pt);
    r.GetBlock(0).Add(-thetaplus, bx);
    r.GetBlock(1).Add(-thetaplus, cx);
    r.GetBlock(2).Add(-thetaplus, cy);
@@ -589,7 +591,7 @@ void HomotopySolver::PredictorResidual(const mfem::BlockVector & X, const double
  * \nabla G_t(x, s, y) = [dG_(2,1)   dG_(2,2)   dG_(2,3)]
  *                       [dG_(3,1)     0        dG_(3,3)]
  */
-void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::BlockOperator & JacG)
+void HomotopySolver::JacG(const mfem::BlockVector &X, const double theta, mfem::BlockOperator & JacG, bool new_pt)
 {
    // I - diag( (x - s) / sqrt( (x - s)^2 + 4 * (\theta a)^q)
    mfem::Vector diagJacGxx(dimx); diagJacGxx = 0.0;

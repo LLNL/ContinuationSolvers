@@ -76,12 +76,12 @@ public:
    void Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf);
    void Mult(const mfem::Vector & X0, mfem::Vector & Xf);
    bool GetConverged() const {  return converged;  };
-   double E(const mfem::BlockVector & X, int & Eeval_err);
-   void G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err);
-   void Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int &reval_err);
+   double E(const mfem::BlockVector & X, int & Eeval_err, bool new_pt=true);
+   void G(const mfem::BlockVector & X, const double theta, mfem::BlockVector & GX, int &Geval_err, bool new_pt=true);
+   void Residual(const mfem::BlockVector & X, const double theta, mfem::BlockVector & r, int &reval_err, bool new_pt=true);
    void ResidualFromG(const mfem::BlockVector & GX, const double theta, mfem::BlockVector & r);
-   void PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err);
-   void JacG(const mfem::BlockVector & X, const double theta, mfem::BlockOperator & JacG);
+   void PredictorResidual(const mfem::BlockVector & X, const double theta, const double thetaplus, mfem::BlockVector & r, int & reval_err, bool new_pt = true);
+   void JacG(const mfem::BlockVector & X, const double theta, mfem::BlockOperator & JacG, bool new_pt=true);
    void NewtonSolve(mfem::BlockOperator & JkOp, const mfem::BlockVector & rk, mfem::BlockVector & dXN);
    void DogLeg(const mfem::BlockOperator & JkOp, const mfem::BlockVector & gk, const double delta, const mfem::BlockVector & dXN, mfem::BlockVector & dXtr);
    bool FilterCheck(const mfem::Vector & r_comp_norm);

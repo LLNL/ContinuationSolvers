@@ -73,6 +73,7 @@ protected:
    mfem::HypreParMatrix * dFdy = nullptr;
    mfem::HypreParMatrix * dQdx = nullptr;
    mfem::HypreParMatrix * dQdy = nullptr;
+   mutable mfem::Vector q_cache;
    int dimu;
    int dimc;
    int dimcglb;

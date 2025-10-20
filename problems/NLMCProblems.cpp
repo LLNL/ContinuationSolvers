@@ -210,6 +210,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
      dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, temp);
      delete temp;
    }
+   q_cache.SetSize(dimy); q_cache = 0.0;
 };
 
 void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err, bool /*new_pt*/) const
@@ -228,24 +229,32 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy,
               "Q -- Inconsistent dimensions");
-  qeval = 0.0;
-  mfem::BlockVector yblock(y_partition);
-  yblock.Set(1.0, y);
-  mfem::BlockVector qblock(y_partition);
-  qblock = 0.0;
+  
+  if (new_pt)
+  {
+     qeval = 0.0;
+     mfem::BlockVector yblock(y_partition);
+     yblock.Set(1.0, y);
+     mfem::BlockVector qblock(y_partition);
+     qblock = 0.0;
 
-  auto u = yblock.GetBlock(0);
-  auto l = yblock.GetBlock(1);
-  auto residual_vector = residual(u, new_pt);
-  qblock.GetBlock(0).Set(1.0, residual_vector);
-  auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
-  qblock.GetBlock(0).Add(1.0, residual_contribution);
+     auto u = yblock.GetBlock(0);
+     auto l = yblock.GetBlock(1);
+     auto residual_vector = residual(u, new_pt);
+     qblock.GetBlock(0).Set(1.0, residual_vector);
+     auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
+     qblock.GetBlock(0).Add(1.0, residual_contribution);
 
-  auto constraint_eval = constraint(u, new_pt);
-  qblock.GetBlock(1).Set(-1.0, constraint_eval);
+     auto constraint_eval = constraint(u, new_pt);
+     qblock.GetBlock(1).Set(-1.0, constraint_eval);
 
-  qeval.Set(1.0, qblock);
-
+     qeval.Set(1.0, qblock);
+     q_cache.Set(1.0, qeval);
+  }
+  else
+  {
+     qeval.Set(1.0, q_cache);
+  }
   Qeval_err = 0;
   int Qeval_err_loc = 0;
   for (int i = 0; i < qeval.Size(); i++) {
