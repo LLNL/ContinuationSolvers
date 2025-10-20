@@ -51,10 +51,10 @@ public:
    Ex4Problem(int n);
    void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, const bool new_pt) const;
    void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, const bool new_pt) const;
-   HypreParMatrix * DxF(const Vector &x, const Vector &y);
-   HypreParMatrix * DyF(const Vector &x, const Vector &y);
-   HypreParMatrix * DxQ(const Vector &x, const Vector &y);
-   HypreParMatrix * DyQ(const Vector &x, const Vector &y);
+   HypreParMatrix * DxF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DxQ(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyQ(const Vector &x, const Vector &y, bool new_pt);
    virtual ~Ex4Problem();
 };
 
@@ -98,12 +98,9 @@ int main(int argc, char *argv[])
    Ex4Problem problem(n);
 
 
-   ////OptNLMCProblem problem(&optproblem); 
    int dimx = problem.GetDimx();
    int dimy = problem.GetDimy();
 
-   cout << "dimx = " << dimx << endl;
-   cout << "dimy = " << dimy << endl;
    Vector x0(dimx); x0 = 0.0;
    Vector y0(dimy); y0 = 0.0; y0.Randomize(); 
    y0 *= 2.0; y0 -= 1.0;
@@ -234,7 +231,6 @@ Ex4Problem::Ex4Problem(int n) : GeneralNLMCProblem()
         {
            cols[i] = i;
         }
-	cout << "a^T is " << aTmat->Height() << " x " << aTmat->Width() << endl;
         aTmat->SetRow(0, cols, a);
      }
      else
@@ -270,7 +266,7 @@ Ex4Problem::Ex4Problem(int n) : GeneralNLMCProblem()
 }
 
 
-void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, const bool new_pt) const
+void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, bool new_pt) const
 {
    qeval = 0.0;
    dQdy->Mult(y, qeval);
@@ -281,29 +277,29 @@ void Ex4Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeva
    Qeval_err = 0;
 }
 
-void Ex4Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, const bool new_pt) const
+void Ex4Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, bool new_pt) const
 {
    feval = 0.0;
    Feval_err = 0;
 }
 
 
-HypreParMatrix * Ex4Problem::DxF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex4Problem::DxF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdx;
 }
 
-HypreParMatrix * Ex4Problem::DyF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex4Problem::DyF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdy;
 }
 
-HypreParMatrix * Ex4Problem::DxQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex4Problem::DxQ(const Vector& x, const Vector& y, bool new_pt)
 {
   return dQdx;
 }
 
-HypreParMatrix * Ex4Problem::DyQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex4Problem::DyQ(const Vector& x, const Vector& y, bool new_pt)
 {
   return dQdy;
 }
