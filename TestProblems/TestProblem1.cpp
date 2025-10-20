@@ -49,12 +49,12 @@ protected:
    bool constraints;
 public:
    Ex1Problem(int n, bool constraints_);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err) const;
-   HypreParMatrix * DxF(const Vector &x, const Vector &y);
-   HypreParMatrix * DyF(const Vector &x, const Vector &y);
-   HypreParMatrix * DxQ(const Vector &x, const Vector &y);
-   HypreParMatrix * DyQ(const Vector &x, const Vector &y);
+   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, bool new_pt) const;
+   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, bool new_pt) const;
+   HypreParMatrix * DxF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DxQ(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyQ(const Vector &x, const Vector &y, bool new_pt);
    //void Displayul(int myid);
    void Getul(Vector & ul_);
    virtual ~Ex1Problem();
@@ -204,7 +204,7 @@ Ex1Problem::Ex1Problem(int n, bool constraints_) : GeneralNLMCProblem(),
   {
      int nentries = 0;
      SparseMatrix * tempSparse = new SparseMatrix(dimx, dimyglb, nentries);
-     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, tempSparse);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsy, tempSparse);
      delete tempSparse;
   }
 
@@ -217,7 +217,7 @@ Ex1Problem::Ex1Problem(int n, bool constraints_) : GeneralNLMCProblem(),
   {
      int nentries = 0;
      SparseMatrix * tempSparse = new SparseMatrix(dimy, dimxglb, nentries);
-     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, tempSparse);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsy, dofOffsetsx, tempSparse);
      delete tempSparse;
   }
   // random entries in [-1, 1]
@@ -230,7 +230,7 @@ Ex1Problem::Ex1Problem(int n, bool constraints_) : GeneralNLMCProblem(),
   }
 }
 
-void Ex1Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_err) const
+void Ex1Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_err, bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && feval.Size() == dimx, "Ex1Problem::F -- Inconsistent dimensions");
   if (constraints)
@@ -242,7 +242,7 @@ void Ex1Problem::F(const Vector& x, const Vector& y, Vector& feval, int &Feval_e
 }
 
 
-void Ex1Problem::Q(const Vector& x, const Vector& y, Vector& qeval, int &Qeval_err) const
+void Ex1Problem::Q(const Vector& x, const Vector& y, Vector& qeval, int &Qeval_err, bool new_pt) const
 {
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy, "Ex1Problem::Q -- Inconsistent dimensions");
   qeval.Set( 1.0, y);
@@ -254,25 +254,25 @@ void Ex1Problem::Q(const Vector& x, const Vector& y, Vector& qeval, int &Qeval_e
 }
 
 
-HypreParMatrix * Ex1Problem::DxF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex1Problem::DxF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdx;
 }
 
 
-HypreParMatrix * Ex1Problem::DyF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex1Problem::DyF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdy; 
 }
 
 
-HypreParMatrix * Ex1Problem::DxQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex1Problem::DxQ(const Vector& x, const Vector& y, bool new_pt)
 {
   return dQdx; 
 }
 
 
-HypreParMatrix * Ex1Problem::DyQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex1Problem::DyQ(const Vector& x, const Vector& y, bool new_pt)
 {
   return dQdy; 
 }

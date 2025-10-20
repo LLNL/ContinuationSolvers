@@ -191,7 +191,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    {
      int nentries = 0;
      auto temp = new mfem::SparseMatrix(dimx, dimxglb, nentries);
-     dFdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsx, temp);
+     dFdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsx, temp);
      delete temp;
    }
 
@@ -199,7 +199,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    {
      int nentries = 0;
      auto temp = new mfem::SparseMatrix(dimx, dimyglb, nentries);
-     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, temp);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsy, temp);
      delete temp;
    }
 
@@ -207,7 +207,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    {
      int nentries = 0;
      auto temp = new mfem::SparseMatrix(dimy, dimxglb, nentries);
-     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, temp);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsy, dofOffsetsx, temp);
      delete temp;
    }
    q_cache.SetSize(dimy); q_cache = 0.0;

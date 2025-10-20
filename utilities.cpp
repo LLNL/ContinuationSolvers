@@ -14,10 +14,28 @@ mfem::HypreParMatrix * GenerateHypreParMatrixFromSparseMatrix(HYPRE_BigInt * col
   HYPRE_BigInt * AJ = Asparse->GetJ();
   double * Adata    = Asparse->GetData();
 
-  mfem::HypreParMatrix * Ahypre = nullptr;
-  Ahypre = new mfem::HypreParMatrix(MPI_COMM_WORLD, nrows_loc, nrows_glb, ncols_glb, AI, AJ, Adata, rowOffsetsloc, colOffsetsloc);
+  mfem::HypreParMatrix * Ahypre = new mfem::HypreParMatrix(MPI_COMM_WORLD, nrows_loc, nrows_glb, ncols_glb, AI, AJ, Adata, rowOffsetsloc, colOffsetsloc);
   return Ahypre;
 }
+
+mfem::HypreParMatrix * GenerateHypreParMatrixFromSparseMatrix2(HYPRE_BigInt * rowOffsetsloc, HYPRE_BigInt * colOffsetsloc, mfem::SparseMatrix * Asparse)
+{
+  int ncols_loc = colOffsetsloc[1] - colOffsetsloc[0];
+  int nrows_loc = rowOffsetsloc[1] - rowOffsetsloc[0];
+  HYPRE_BigInt ncols_glb, nrows_glb;
+  MPI_Allreduce(&nrows_loc, &nrows_glb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&ncols_loc, &ncols_glb, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  int * AI          = Asparse->GetI();
+  HYPRE_BigInt * AJ = Asparse->GetJ();
+  double * Adata    = Asparse->GetData();
+
+  mfem::HypreParMatrix * Ahypre = new mfem::HypreParMatrix(MPI_COMM_WORLD, nrows_loc, nrows_glb, ncols_glb, AI, AJ, Adata, rowOffsetsloc, colOffsetsloc);
+  return Ahypre;
+}
+
+
+
 
 
 mfem::HypreParMatrix * GenerateHypreParMatrixFromDiagonal(HYPRE_BigInt * offsetsloc, 

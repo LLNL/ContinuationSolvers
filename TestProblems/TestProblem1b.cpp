@@ -146,7 +146,7 @@ Ex1bProblem::Ex1bProblem(int n) : OptProblem(),
   {
      int nentries = 0;
      SparseMatrix * dgdusparse = new SparseMatrix(dimM, dimUglb, nentries);
-     dgdu = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsU, dofOffsetsM, dgdusparse);
+     dgdu = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsM, dofOffsetsU, dgdusparse);
      delete dgdusparse;
   }
 }

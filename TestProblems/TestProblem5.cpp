@@ -63,12 +63,12 @@ protected:
    Array<int> y_partition; // y partitioned into [u, l]
 public:
    Ex5Problem(int n);
-   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, const bool new_pt) const;
-   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, const bool new_pt) const;
-   HypreParMatrix * DxF(const Vector &x, const Vector &y);
-   HypreParMatrix * DyF(const Vector &x, const Vector &y);
-   HypreParMatrix * DxQ(const Vector &x, const Vector &y);
-   HypreParMatrix * DyQ(const Vector &x, const Vector &y);
+   void F(const Vector &x, const Vector &y, Vector &feval, int &Feval_err, bool new_pt) const;
+   void Q(const Vector &x, const Vector &y, Vector &qeval, int &Qeval_err, bool new_pt) const;
+   HypreParMatrix * DxF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyF(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DxQ(const Vector &x, const Vector &y, bool new_pt);
+   HypreParMatrix * DyQ(const Vector &x, const Vector &y, bool new_pt);
    virtual ~Ex5Problem();
 };
 
@@ -208,7 +208,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimx, dimxglb, nentries);
-     dFdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsx, temp);
+     dFdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsx, temp);
      delete temp;
   }
 
@@ -216,7 +216,7 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimx, dimyglb, nentries);
-     dFdy = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsy, dofOffsetsx, temp);
+     dFdy = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsx, dofOffsetsy, temp);
      delete temp;
   }
 
@@ -224,70 +224,16 @@ Ex5Problem::Ex5Problem(int n) : GeneralNLMCProblem()
   {
      int nentries = 0;
      SparseMatrix * temp = new SparseMatrix(dimy, dimxglb, nentries);
-     dQdx = GenerateHypreParMatrixFromSparseMatrix(dofOffsetsx, dofOffsetsy, temp);
+     dQdx = GenerateHypreParMatrixFromSparseMatrix2(dofOffsetsy, dofOffsetsx, temp);
      delete temp;
   }
-
-  // dQ / dy = [ I   a ]
-  //           [ a^T 0 ]
-  // To do: move this to dQdy evaluation member function
-  //{
-  //   // task construct I dimu x dimu
-  //   // construct amatrix = [a] dimu x 1
-  //   // construct transpose
-  //   // use block matrix technology to form dQdy
-  //   Vector one(dimu); one = 1.0;
-  //   HypreParMatrix * I = nullptr;
-  //   I = GenerateHypreParMatrixFromDiagonal(uOffsets, one);
-  //   
-
-  //   // construct [a]^T
-  //   SparseMatrix * aTmat;
-  //   if (dimc > 0)
-  //   {
-  //      aTmat = new SparseMatrix(dimc, n, n);
-  //      Array<int> cols;
-  //      cols.SetSize(n);
-  //      for (int i = 0; i < n; i++)
-  //      {
-  //         cols[i] = i;
-  //      }
-  //      cout << "a^T is " << aTmat->Height() << " x " << aTmat->Width() << endl;
-  //      aTmat->SetRow(0, cols, a);
-  //   }
-  //   else
-  //   {
-  //      aTmat = new SparseMatrix(dimc, n, dimc);
-  //   }
-
-  //   HypreParMatrix * aThypre = GenerateHypreParMatrixFromSparseMatrix(uOffsets, cOffsets, aTmat);
-
-  //   HypreParMatrix * ahypre = aThypre->Transpose();
-
-  //   Array2D<const HypreParMatrix *> BlockMat(2, 2);
-  //   BlockMat(0, 0) = I;
-  //   BlockMat(0, 1) = ahypre;
-  //   BlockMat(1, 0) = aThypre;
-  //   BlockMat(1, 1) = nullptr;
-
-  //   dQdy = HypreParMatrixFromBlocks(BlockMat);
-
-
-  //   delete aTmat;
-  //   delete ahypre;
-  //   delete aThypre;
-  //   delete I;
-  //}
-
-  
-
 }
 
 
 // TO-DO: complete me!
 // Q(x, y = [ u ]) = [ u + (dc / du)^T l ]
 //          [ l ]    [ c(u)              ] 
-void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, const bool new_pt) const
+void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeval_err, bool new_pt) const
 {
    qeval = 0.0;
    BlockVector yblock(y_partition); yblock.Set(1.0, y);
@@ -312,30 +258,30 @@ void Ex5Problem::Q(const Vector & x, const Vector & y, Vector & qeval, int &Qeva
    Qeval_err = 0;
 }
 
-void Ex5Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, const bool new_pt) const
+void Ex5Problem::F(const Vector & x, const Vector & y, Vector & feval, int &Feval_err, bool new_pt) const
 {
    feval = 0.0;
    Feval_err = 0;
 }
 
 
-HypreParMatrix * Ex5Problem::DxF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex5Problem::DxF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdx;
 }
 
-HypreParMatrix * Ex5Problem::DyF(const Vector& x, const Vector& y)
+HypreParMatrix * Ex5Problem::DyF(const Vector& x, const Vector& y, bool new_pt)
 {
   return dFdy;
 }
 
-HypreParMatrix * Ex5Problem::DxQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex5Problem::DxQ(const Vector& x, const Vector& y, bool new_pt)
 {
   return dQdx;
 }
 
 // TODO: update here!
-HypreParMatrix * Ex5Problem::DyQ(const Vector& x, const Vector& y)
+HypreParMatrix * Ex5Problem::DyQ(const Vector& x, const Vector& y, bool new_pt)
 {
   if (dQdy)
   {
@@ -377,7 +323,7 @@ HypreParMatrix * Ex5Problem::DyQ(const Vector& x, const Vector& y)
         aTmat = new SparseMatrix(dimc, I->GetGlobalNumCols(), dimc);
      }
 
-     HypreParMatrix * aThypre = GenerateHypreParMatrixFromSparseMatrix(uOffsets, cOffsets, aTmat);
+     HypreParMatrix * aThypre = GenerateHypreParMatrixFromSparseMatrix2(cOffsets, uOffsets, aTmat);
 
      HypreParMatrix * ahypre = aThypre->Transpose();
 
