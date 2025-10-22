@@ -97,7 +97,6 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    double betabar;
    while (jOpt < max_outer_iter)
    {
-      // new_x? at jOpt = 1 yes, otherwise no?
       new_pt = false;
       opt_err = E(Xk, Eeval_err, new_pt);
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
