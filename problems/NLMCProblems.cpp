@@ -272,35 +272,38 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
 // dQdy = [ dr/du   dc/du^T]
 //        [-dc/du   0  ]
+// recomputation such as HypreParMatrixFromBlocks is done
+// at every DyQ call independent of value of new_pt
+// recomputation may be avoided in the residualJacobian/constraintJacobian calls 
 mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*/, const mfem::Vector& y, bool new_pt)
 {
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(y.Size() == dimy, "InertialReliefProblem::DyQ -- Inconsistent dimensions");
-  if (new_pt)
-  {
-     // note we are neglecting Hessian constraint terms
-     mfem::BlockVector yblock(y_partition);
-     yblock.Set(1.0, y);
-     auto u = yblock.GetBlock(0);
+  
+  // note we are neglecting Hessian constraint terms
+  
+  mfem::BlockVector yblock(y_partition);
+  yblock.Set(1.0, y);
+  auto u = yblock.GetBlock(0);
 
-     if (dQdy) {
-       delete dQdy;
-     }
-     {
-       auto drdu = residualJacobian(u, new_pt);
-       auto negdcdu = constraintJacobian(u, new_pt);
-       auto dcduT = negdcdu->Transpose();
-       (*negdcdu) *= -1.0;
-
-       mfem::Array2D<const mfem::HypreParMatrix*> BlockMat(2, 2);
-       BlockMat(0, 0) = drdu;
-       BlockMat(0, 1) = dcduT;
-       BlockMat(1, 0) = negdcdu;
-       BlockMat(1, 1) = nullptr;
-       dQdy = HypreParMatrixFromBlocks(BlockMat);
-       delete dcduT;
-     }
+  if (dQdy) {
+    delete dQdy;
   }
+  {
+    auto drdu = residualJacobian(u, new_pt);
+    auto negdcdu = constraintJacobian(u, new_pt);
+    auto dcduT = negdcdu->Transpose();
+    (*negdcdu) *= -1.0;
+
+    mfem::Array2D<const mfem::HypreParMatrix*> BlockMat(2, 2);
+    BlockMat(0, 0) = drdu;
+    BlockMat(0, 1) = dcduT;
+    BlockMat(1, 0) = negdcdu;
+    BlockMat(1, 1) = nullptr;
+    dQdy = HypreParMatrixFromBlocks(BlockMat);
+    delete dcduT;
+  }
+  
   return dQdy;
 };
 

@@ -54,7 +54,7 @@ protected:
    double gammaf = 1.e-4;
 
    const double delta0 = 1.0;
-   const double delta_MAX = 1.e5;
+   double delta_MAX = 1.e5;
    const double kappa_delta = 1.e2;
    const double eta1 = 0.2;
    const double eta2 = 0.5;
@@ -102,6 +102,15 @@ public:
    bool NeighborhoodCheck(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
    bool NeighborhoodCheck_1(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
    bool NeighborhoodCheck_2(const mfem::BlockVector & X, const mfem::BlockVector & r, const double theta, const double beta, double & betabar_);
+   void SetDeltaMax(const double delta_MAX_)
+   {
+      delta_MAX = delta_MAX_;
+   };
+   void SetNeighborhoodParameter(const double beta0_)
+   {
+      beta0 = beta0_;
+      beta1 = fbeta * beta0;
+   };
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
    void SetEarlyTermination(bool earlyTermination_) { earlyTermination = earlyTermination_; };
