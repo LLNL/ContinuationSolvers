@@ -233,6 +233,7 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   if (new_pt)
   {
      qeval = 0.0;
+     try {
      mfem::BlockVector yblock(y_partition);
      yblock.Set(1.0, y);
      mfem::BlockVector qblock(y_partition);
@@ -250,6 +251,10 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
      qeval.Set(1.0, qblock);
      q_cache.Set(1.0, qeval);
+     } catch (...)
+     {
+        Qeval_err = 1;
+     }
   }
   else
   {
@@ -363,4 +368,3 @@ EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
      delete adjoint_solver;
   }
 };
-
