@@ -241,13 +241,13 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
      auto u = yblock.GetBlock(0);
      auto l = yblock.GetBlock(1);
-     auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
-     qblock.GetBlock(0).Set(1.0, residual_contribution);
      auto residual_vector = residual(u, new_pt);
-     qblock.GetBlock(0).Add(1.0, residual_vector);
-
+     qblock.GetBlock(0).Set(1.0, residual_vector);
      auto constraint_eval = constraint(u, new_pt);
      qblock.GetBlock(1).Set(-1.0, constraint_eval);
+     auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
+     qblock.GetBlock(0).Add(1.0, residual_contribution);
+
 
      qeval.Set(1.0, qblock);
      q_cache.Set(1.0, qeval);
