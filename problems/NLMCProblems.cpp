@@ -229,7 +229,7 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
   MFEM_VERIFY(set_sizes, "need to set sizes in problem constructor");
   MFEM_VERIFY(x.Size() == dimx && y.Size() == dimy && qeval.Size() == dimy,
               "Q -- Inconsistent dimensions");
-  
+  Qeval_err = 0;
   if (new_pt)
   {
      qeval = 0.0;
@@ -251,24 +251,27 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
      qeval.Set(1.0, qblock);
      q_cache.Set(1.0, qeval);
-     } catch (...)
+     } catch (const std::runtime_error& e)
      {
-        Qeval_err = 1;
+	Qeval_err = 1;
      }
   }
   else
   {
      qeval.Set(1.0, q_cache);
   }
-  Qeval_err = 0;
-  int Qeval_err_loc = 0;
-  for (int i = 0; i < qeval.Size(); i++) {
-    if (std::isnan(qeval(i))) {
-      Qeval_err_loc = 1;
-      break;
-    }
+  if (Qeval_err == 0)
+  {
+     Qeval_err = 0;
+     int Qeval_err_loc = 0;
+     for (int i = 0; i < qeval.Size(); i++) {
+       if (std::isnan(qeval(i))) {
+         Qeval_err_loc = 1;
+         break;
+       }
+     }
+     MPI_Allreduce(&Qeval_err_loc, &Qeval_err, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   }
-  MPI_Allreduce(&Qeval_err_loc, &Qeval_err, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 };
 
 
