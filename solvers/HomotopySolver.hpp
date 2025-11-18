@@ -19,7 +19,7 @@ protected:
 
 
    mfem::Array<int> block_offsets_xsy;
-   
+   mfem::Array<int> block_offsets_xy;
 
    // pointers to various HypreParMatrix
    // solver will not own these pointers
@@ -50,7 +50,6 @@ protected:
 
    // filter
    mfem::Array<mfem::Vector *> filter;
-   mfem::Array<int> krylov_its; 
    double gammaf = 1.e-4;
 
    const double delta0 = 1.0;
@@ -83,6 +82,11 @@ protected:
    int print_level = 0;
 
    std::ostream * hout = &std::cout;
+   
+   // save data
+   bool save_iterates = false;
+   mfem::Array<mfem::Vector *> iterates;   
+   mfem::Array<int> krylov_its; 
 public:
    HomotopySolver(GeneralNLMCProblem * problem_);
    void Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem::Vector & xf, mfem::Vector & yf);
@@ -120,7 +124,10 @@ public:
    };
    void SetLinearSolver(mfem::Solver &solver_) { linSolver = &(solver_); };
    mfem::Array<int> & GetKrylovIterations() {return krylov_its;};
-   void SetPrintLevel(int print_level_) { print_level = print_level_; }; 
+   void SetPrintLevel(int print_level_) { print_level = print_level_; };
+   void EnableSaveIterates()  { save_iterates = true; };
+   void DisableSaveIterates() { save_iterates = false; };  
+   mfem::Array<mfem::Vector *> GetIterates() {return iterates;};
    virtual ~HomotopySolver();
 };
 

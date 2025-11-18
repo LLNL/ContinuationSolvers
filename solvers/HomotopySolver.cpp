@@ -4,7 +4,7 @@
 #include "AMGF.hpp"
 
 
-HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4), filter(0), krylov_its(0)
+HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_), block_offsets_xsy(4), block_offsets_xy(3), filter(0), krylov_its(0), iterates(0)
 {
    dimx = problem->GetDimx();
    dimy = problem->GetDimy();
@@ -19,6 +19,11 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
    block_offsets_xsy[3] = dimy; // y
    block_offsets_xsy.PartialSum();
 
+   block_offsets_xy[0] = 0;
+   block_offsets_xy[1] = dimx;
+   block_offsets_xy[2] = dimy;
+   block_offsets_xy.PartialSum();
+
    gammax.SetSize(dimx); gammax = 1.0;
    gammay.SetSize(dimy); gammay = 1.0;
    ax.SetSize(dimx); ax = 1.0;
@@ -30,6 +35,7 @@ HomotopySolver::HomotopySolver(GeneralNLMCProblem * problem_) : problem(problem_
     
    MyRank = mfem::Mpi::WorldRank();
    iAmRoot = MyRank == 0 ? true : false;
+
 }
 
 
@@ -99,6 +105,16 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    {
       new_pt = false;
       opt_err = E(Xk, Eeval_err, new_pt);
+      if (save_iterates)
+      {
+         mfem::BlockVector xy(block_offsets_xy);
+         xy.GetBlock(0).Set(1.0, Xk.GetBlock(0));
+         xy.GetBlock(1).Set(1.0, Xk.GetBlock(2));
+         mfem::Vector * iterate = new mfem::Vector(dimx + dimy);
+         iterate->Set(1.0, xy);
+         iterates.Append(iterate);
+      }
+
       MFEM_VERIFY(Eeval_err == 0, "error in evaluation of optimality error E, should not occur\n");
       if (iAmRoot && print_level > 0)
       {
@@ -918,6 +934,13 @@ bool HomotopySolver::NeighborhoodCheck_2(const mfem::BlockVector & X, const mfem
 HomotopySolver::~HomotopySolver()
 {
    block_offsets_xsy.DeleteAll();
+   block_offsets_xy.DeleteAll();
+   for (int i = 0; i < iterates.Size(); i++)
+   {
+     delete iterates[i];
+   }
+
+
    gammax.SetSize(0);
    gammay.SetSize(0);
    ax.SetSize(0);
