@@ -115,6 +115,10 @@ public:
       beta0 = beta0_;
       beta1 = fbeta * beta0;
    };
+   void SetContinuationParameter(double theta0_)
+   {
+      theta0 = theta0_;
+   };
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
    void SetEarlyTermination(bool earlyTermination_) { earlyTermination = earlyTermination_; };
