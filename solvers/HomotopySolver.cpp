@@ -96,6 +96,8 @@ void HomotopySolver::Mult(const mfem::Vector & x0, const mfem::Vector & y0, mfem
    double cy_scale = mfem::GlobalLpNorm(2, Q0.Norml2(), MPI_COMM_WORLD);
    cx_scale = std::max(1.0, sqrt(cx_scale));
    cy_scale = std::max(1.0, sqrt(cy_scale));
+   cx_scale = std::min(cx_scale, max_cx_scale);
+   cy_scale = std::min(cy_scale, max_cy_scale);
    cx = cx_scale;
    cy = cy_scale;
    

@@ -47,6 +47,8 @@ protected:
    const double q = 1.0;
    mfem::Vector gammax, gammay;
    mfem::Vector ax, bx, cx, cy;
+   double max_cx_scale = std::numeric_limits<double>::infinity();
+   double max_cy_scale = std::numeric_limits<double>::infinity();
 
    // filter
    mfem::Array<mfem::Vector *> filter;
@@ -118,6 +120,12 @@ public:
    void SetContinuationParameter(double theta0_)
    {
       theta0 = theta0_;
+   };
+   void EnableRegularizedNewtonMode()
+   {
+      max_cx_scale = 0.0;
+      max_cy_scale = 0.0;
+      theta0 = 1.e-2;
    };
    void SetTol(double tol_) { tol = tol_; };
    void SetMaxIter(int max_outer_iter_) { max_outer_iter = max_outer_iter_; };
