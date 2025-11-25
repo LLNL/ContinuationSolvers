@@ -84,8 +84,20 @@ protected:
    bool own_adjoint_solver = true;
    bool adjoint_is_symmetric = false;
    bool set_sizes = false;
+
+   mfem::Array<int> fixed_tdof_list_;
+   mfem::Array<int> disp_tdof_list_;
+   bool has_essential_dofs = false;
+   std::unique_ptr<mfem::HypreParMatrix> restriction_;
+   std::unique_ptr<mfem::HypreParMatrix> prolongation_;
+   std::unique_ptr<mfem::HypreParMatrix> disp_restriction_;
+   std::unique_ptr<mfem::HypreParMatrix> disp_prolongation_;
+   mutable mfem::Vector ufull_;
+   mfem::Vector uDC_;
 public:
    EqualityConstrainedHomotopyProblem();
+   void EqualityConstrainedHomotopyInit();
+   EqualityConstrainedHomotopyProblem(mfem::Array<int> fixed_tdof_list, mfem::Array<int> disp_tdof_list, const mfem::Vector uDC); 
    void SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets);
    virtual mfem::Vector residual(const mfem::Vector & u, bool new_pt) const = 0;
    virtual mfem::Vector constraintJacobianTvp(const mfem::Vector &u, const mfem::Vector & l, bool new_pt) const = 0;

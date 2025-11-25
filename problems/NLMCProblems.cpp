@@ -142,9 +142,28 @@ OptNLMCProblem::~OptNLMCProblem()
 
 EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem()
 {
+   EqualityConstrainedHomotopyInit();
+};
+
+void EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyInit()
+{
    y_partition.SetSize(3);
    adjoint_solver = new DirectSolver();
+   fixed_tdof_list_.SetSize(0);
+   disp_tdof_list_.SetSize(0);
+   uDC_.SetSize(0);
 };
+
+
+EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem(mfem::Array<int> fixed_tdof_list, mfem::Array<int> disp_tdof_list, const mfem::Vector uDC)
+{
+  EqualityConstrainedHomotopyInit();
+  fixed_tdof_list_ = fixed_tdof_list;
+  disp_tdof_list_ = disp_tdof_list;
+  uDC_ = uDC;
+  has_essential_dofs = true;  
+};
+
 
 mfem::Vector EqualityConstrainedHomotopyProblem::GetDisplacement(mfem::Vector &X)
 {
@@ -211,6 +230,63 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
      delete temp;
    }
    q_cache.SetSize(dimy); q_cache = 0.0;
+
+   // construct prolongation and restriction operators
+   int dimufull_ = dimu;
+   if (has_essential_dofs)
+   {
+      dimufull_ = uDC_.Size();
+   }
+   else
+   {
+      uDC_.SetSize(dimufull_);
+      uDC_ = 0.0;
+   }
+   ufull_.SetSize(dimufull_); ufull_ = 0.0;
+
+   // uDC should be a vector on the entire space (essential + non-essential dofs)
+   std::unique_ptr<HYPRE_BigInt> ufullOffsets;
+   ufullOffsets.reset(offsetsFromLocalSizes(dimufull_, MPI_COMM_WORLD)); 
+
+
+   // mask out essential dofs
+   std::unique_ptr<HYPRE_Int[]> mask = std::make_unique<HYPRE_Int[]>(static_cast<size_t>(dimufull_));
+   for (int i = 0; i < dimufull_; i++) {
+     mask[static_cast<size_t>(i)] = 1;
+   }
+   for (int i = 0; i < fixed_tdof_list_.Size(); i++) {
+     mask[static_cast<size_t>(fixed_tdof_list_[i])] = 0;
+   }
+   for (int i = 0; i < disp_tdof_list_.Size(); i++) {
+     mask[static_cast<size_t>(disp_tdof_list_[i])] = 0;
+   }
+
+   // now mask out any dofs that aren't disp BC dofs
+   std::unique_ptr<HYPRE_Int[]> dispmask = std::make_unique<HYPRE_Int[]>(static_cast<size_t>(dimufull_));
+   for (int i = 0; i < dimufull_; i++) {
+     dispmask[static_cast<size_t>(i)] = 0;
+   }
+   for (int i = 0; i < disp_tdof_list_.Size(); i++) {
+     dispmask[static_cast<size_t>(disp_tdof_list_[i])] = 1;
+   }
+
+   restriction_.reset(
+       GenerateProjector(uOffsets_, ufullOffsets.get(), mask.get()));
+
+   prolongation_.reset(restriction_->Transpose());
+
+   // need disp offsets
+   std::unique_ptr<HYPRE_BigInt> dispuOffsets;
+   dispuOffsets.reset(offsetsFromLocalSizes(disp_tdof_list_.Size(), MPI_COMM_WORLD));
+   disp_restriction_.reset(GenerateProjector(
+       dispuOffsets.get(), ufullOffsets.get(), dispmask.get()));
+
+   disp_prolongation_.reset(disp_restriction_->Transpose());
+
+   // remove any nonzero entries in dispBC vec that are not strictly needed
+   mfem::Vector RdispBC(disp_restriction_->Height());
+   disp_restriction_->Mult(uDC_, RdispBC);
+   disp_prolongation_->Mult(RdispBC, uDC_);
 };
 
 void EqualityConstrainedHomotopyProblem::F(const mfem::Vector& x, const mfem::Vector& y, mfem::Vector& feval, int& Feval_err, bool /*new_pt*/) const
@@ -241,13 +317,35 @@ void EqualityConstrainedHomotopyProblem::Q(const mfem::Vector& x, const mfem::Ve
 
      auto u = yblock.GetBlock(0);
      auto l = yblock.GetBlock(1);
-     auto residual_vector = residual(u, new_pt);
-     qblock.GetBlock(0).Set(1.0, residual_vector);
-     auto constraint_eval = constraint(u, new_pt);
+     if (has_essential_dofs)
+     {
+       prolongation_->Mult(u, ufull_);
+       ufull_.Add(1.0, uDC_);
+     }
+     else
+     {
+       ufull_.Set(1.0, u);
+     }
+     auto res_vec = residual(ufull_, new_pt);
+     if (has_essential_dofs)
+     {
+       restriction_->Mult(res_vec, qblock.GetBlock(0));
+     }
+     else
+     {
+       qblock.GetBlock(0).Set(1.0, res_vec);
+     }
+     auto constraint_eval = constraint(ufull_, new_pt);
      qblock.GetBlock(1).Set(-1.0, constraint_eval);
-     auto residual_contribution = constraintJacobianTvp(u, l, new_pt);
-     qblock.GetBlock(0).Add(1.0, residual_contribution);
-
+     auto residual_contribution = constraintJacobianTvp(ufull_, l, new_pt);
+     if (has_essential_dofs)
+     {
+       restriction_->AddMult(residual_contribution, qblock.GetBlock(0));
+     }
+     else
+     {
+       qblock.GetBlock(0).Add(1.0, residual_contribution);
+     }
 
      qeval.Set(1.0, qblock);
      q_cache.Set(1.0, qeval);
@@ -298,18 +396,53 @@ mfem::Operator* EqualityConstrainedHomotopyProblem::DyQ(const mfem::Vector& /*x*
     delete dQdy;
   }
   {
-    auto drdu = residualJacobian(u, new_pt);
-    auto negdcdu = constraintJacobian(u, new_pt);
-    auto dcduT = negdcdu->Transpose();
-    (*negdcdu) *= -1.0;
-
+    if (has_essential_dofs)
+    {
+      prolongation_->Mult(u, ufull_);
+      ufull_.Add(1.0, uDC_);
+    }
+    else
+    {
+      ufull_.Set(1.0, u);
+    }
+    
     mfem::Array2D<const mfem::HypreParMatrix*> BlockMat(2, 2);
+    
+    mfem::HypreParMatrix * drdu = nullptr;
+    auto drdufull = residualJacobian(ufull_, new_pt);
+    if (has_essential_dofs)
+    {
+       auto drdufull = residualJacobian(ufull_, new_pt);    
+       drdu = mfem::RAP(drdufull, prolongation_.get());
+    }
+    else
+    {
+       drdu = residualJacobian(ufull_, new_pt);
+    }
+    
+    mfem::HypreParMatrix * dcdu = nullptr;
+    if (has_essential_dofs)
+    {
+       auto dcdufull = constraintJacobian(ufull_, new_pt);
+       dcdu = mfem::ParMult(dcdufull, prolongation_.get(), true);
+    }
+    else
+    {
+       dcdu = constraintJacobian(ufull_, new_pt);
+    }
+    auto dcduT = dcdu->Transpose();
+    (*dcdu) *= -1.0; 
     BlockMat(0, 0) = drdu;
     BlockMat(0, 1) = dcduT;
-    BlockMat(1, 0) = negdcdu;
+    BlockMat(1, 0) = dcdu; 
     BlockMat(1, 1) = nullptr;
     dQdy = HypreParMatrixFromBlocks(BlockMat);
     delete dcduT;
+    if (has_essential_dofs)
+    {
+      delete dcdu;
+      delete drdu;
+    }
   }
   
   return dQdy;
