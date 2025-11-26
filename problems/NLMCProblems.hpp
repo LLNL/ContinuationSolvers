@@ -75,9 +75,10 @@ protected:
    mfem::HypreParMatrix * dQdy = nullptr;
    mutable mfem::Vector q_cache;
    int dimu_;
+   int dimuglb_;
    int dimufull_;
    int dimc_;
-   int dimcglb;
+   int dimcglb_;
    mfem::Array<int> y_partition;
    HYPRE_BigInt * uOffsets_ = nullptr;
    HYPRE_BigInt * cOffsets_ = nullptr;
@@ -114,8 +115,10 @@ public:
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y, bool new_pt=true) override;
    mfem::Vector GetDisplacement(mfem::Vector &Xf);
    mfem::Vector GetLagrangeMultiplier(mfem::Vector &Xf);
-   int GetDisplacementDim() { return dimu_; };
-   int GetMultiplierDim() { return dimc_; };
+   int GetDisplacementDim() const { return dimu_; };
+   int GetMultiplierDim() const { return dimc_; };
+   int GetGlobalDisplacementDim() const { return dimuglb_; };
+   int GetGlobalMultiplierDim() const { return dimcglb_; };
    void SetAdjointSolver(mfem::Solver * adjoint_solver_);
    void SetSymmetricAdjoint(bool symmetric) { adjoint_is_symmetric = symmetric; };
    void AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 

@@ -202,6 +202,9 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    set_sizes = true;
    dimu_ = uOffsets[1] - uOffsets[0];
    dimc_ = cOffsets[1] - cOffsets[0];
+   MPI_Allreduce(&dimc_, &dimcglb_, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+   MPI_Allreduce(&dimu_, &dimuglb_, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
    uOffsets_ = new HYPRE_BigInt[2];
    cOffsets_ = new HYPRE_BigInt[2];
    for (int i = 0; i < 2; i++)
