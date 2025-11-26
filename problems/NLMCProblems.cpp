@@ -168,23 +168,40 @@ EqualityConstrainedHomotopyProblem::EqualityConstrainedHomotopyProblem(mfem::Arr
 mfem::Vector EqualityConstrainedHomotopyProblem::GetDisplacement(mfem::Vector &X)
 {
    MFEM_VERIFY(X.Size() == dimx + dimy, "input vector of an invalid size");   
-   mfem::Vector u(X, 0, dimu);
+   mfem::Vector ur(X, 0, dimu_); // reduced
+   mfem::Vector u(dimufull_); u = 0.0;
+   prolongation_->Mult(ur, u);
    return u;
 };
 
 mfem::Vector EqualityConstrainedHomotopyProblem::GetLagrangeMultiplier(mfem::Vector &X)
 {
    MFEM_VERIFY(X.Size() == dimx + dimy, "input vector of an invalid size");   
-   mfem::Vector multiplier(X, dimu, dimc);
+   mfem::Vector multiplier(X, dimu_, dimc_);
    return multiplier;
 };
+
+void EqualityConstrainedHomotopyProblem::SetSizes(int dimu, int dimc)
+{ 
+  std::unique_ptr<HYPRE_BigInt> uOffsets;
+  uOffsets.reset(offsetsFromLocalSizes(dimu, MPI_COMM_WORLD));
+  
+  std::unique_ptr<HYPRE_BigInt[]> cOffsets = std::make_unique<HYPRE_BigInt[]>(2);
+  HYPRE_BigInt cOffset = 0;
+  MPI_Scan(&dimc, &cOffset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  cOffset -= dimc;
+  cOffsets[0] = cOffset;
+  cOffsets[1] = cOffsets[0] + dimc;
+  SetSizes(uOffsets.get(), cOffsets.get());
+}
+
 
 
 void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets)
 {
    set_sizes = true;
-   dimu = uOffsets[1] - uOffsets[0];
-   dimc = cOffsets[1] - cOffsets[0];
+   dimu_ = uOffsets[1] - uOffsets[0];
+   dimc_ = cOffsets[1] - cOffsets[0];
    uOffsets_ = new HYPRE_BigInt[2];
    cOffsets_ = new HYPRE_BigInt[2];
    for (int i = 0; i < 2; i++)
@@ -194,8 +211,8 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    }
    
    y_partition[0] = 0;
-   y_partition[1] = dimu;
-   y_partition[2] = dimc;
+   y_partition[1] = dimu_;
+   y_partition[2] = dimc_;
    y_partition.PartialSum();
 
    HYPRE_BigInt dofOffsets[2];
@@ -232,7 +249,7 @@ void EqualityConstrainedHomotopyProblem::SetSizes(HYPRE_BigInt * uOffsets, HYPRE
    q_cache.SetSize(dimy); q_cache = 0.0;
 
    // construct prolongation and restriction operators
-   int dimufull_ = dimu;
+   dimufull_ = dimu_;
    if (has_essential_dofs)
    {
       dimufull_ = uDC_.Size();
@@ -462,8 +479,8 @@ void EqualityConstrainedHomotopyProblem::SetAdjointSolver(mfem::Solver * adjoint
 void EqualityConstrainedHomotopyProblem::AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 
    mfem::Vector & adjoint)
 {
-   MFEM_VERIFY(adjoint_load.Size() == dimu + dimc, "Adjoint load not of the correct size");
-   MFEM_VERIFY(adjoint.Size() == dimu + dimc, "Adjoint solution vector not of the correct size");
+   MFEM_VERIFY(adjoint_load.Size() == dimu_ + dimc_, "Adjoint load not of the correct size");
+   MFEM_VERIFY(adjoint.Size() == dimu_ + dimc_, "Adjoint solution vector not of the correct size");
    mfem::BlockVector evaluation_y_point(y_partition); evaluation_y_point = 0.0;
    evaluation_y_point.GetBlock(0).Set(1.0, evaluation_u_point);
    mfem::Vector evaluation_x_point(dimx); evaluation_x_point = 0.0;
@@ -484,6 +501,16 @@ void EqualityConstrainedHomotopyProblem::AdjointSolve(const mfem::Vector & evalu
    }
 };
 
+
+//void EqualityConstrainedHomotopyProblem::fullDisplacement(const mfem::Vector& X, mfem::Vector& u)
+//{
+//  MFEM_VERIFY(X.Size() == dimu_ + dimc_, "input X not correct size");
+//  MFEM_VERIFY(u.Size() == dimufull_, "input u not correct size");
+//  mfem::BlockVector Xblock(y_partition);
+//  Xblock.Set(1.0, X);
+//  prolongation_->Mult(Xblock.GetBlock(0), u);
+//  u.Add(1.0, uDC_);
+//}
 
 EqualityConstrainedHomotopyProblem::~EqualityConstrainedHomotopyProblem()
 {

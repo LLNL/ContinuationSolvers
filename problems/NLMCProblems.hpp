@@ -74,8 +74,9 @@ protected:
    mfem::HypreParMatrix * dQdx = nullptr;
    mfem::HypreParMatrix * dQdy = nullptr;
    mutable mfem::Vector q_cache;
-   int dimu;
-   int dimc;
+   int dimu_;
+   int dimufull_;
+   int dimc_;
    int dimcglb;
    mfem::Array<int> y_partition;
    HYPRE_BigInt * uOffsets_ = nullptr;
@@ -98,6 +99,7 @@ public:
    EqualityConstrainedHomotopyProblem();
    void EqualityConstrainedHomotopyInit();
    EqualityConstrainedHomotopyProblem(mfem::Array<int> fixed_tdof_list, mfem::Array<int> disp_tdof_list, const mfem::Vector uDC); 
+   void SetSizes(int dimu, int dimc);
    void SetSizes(HYPRE_BigInt * uOffsets, HYPRE_BigInt * cOffsets);
    virtual mfem::Vector residual(const mfem::Vector & u, bool new_pt) const = 0;
    virtual mfem::Vector constraintJacobianTvp(const mfem::Vector &u, const mfem::Vector & l, bool new_pt) const = 0;
@@ -112,8 +114,8 @@ public:
    mfem::Operator * DyQ(const mfem::Vector &x, const mfem::Vector &y, bool new_pt=true) override;
    mfem::Vector GetDisplacement(mfem::Vector &Xf);
    mfem::Vector GetLagrangeMultiplier(mfem::Vector &Xf);
-   int GetDisplacementDim() { return dimu; };
-   int GetMultiplierDim() { return dimc; };
+   int GetDisplacementDim() { return dimu_; };
+   int GetMultiplierDim() { return dimc_; };
    void SetAdjointSolver(mfem::Solver * adjoint_solver_);
    void SetSymmetricAdjoint(bool symmetric) { adjoint_is_symmetric = symmetric; };
    void AdjointSolve(const mfem::Vector & evaluation_u_point, const mfem::Vector & adjoint_load, 
